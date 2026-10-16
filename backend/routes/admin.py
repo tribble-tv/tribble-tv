@@ -236,7 +236,47 @@ def videos_torrent_create():
         db.session.commit()
         flash(f"Vídeo torrent '{title}' criado.", "success")
         return redirect(url_for("admin.videos_index"))
-    return render_template("admin/videos/torrent_form.html", video=None)
+    prefill = {
+        "title": request.args.get("title", "").strip()[:300],
+        "magnet": request.args.get("magnet", "").strip(),
+    }
+    if not prefill["magnet"].startswith("magnet:?"):
+        prefill["magnet"] = ""
+    return render_template("admin/videos/torrent_form.html", video=None, prefill=prefill)
+
+
+@admin_bp.route("/torrent-indexer")
+def torrent_indexer_index():
+    from backend.services import torrent_indexer_service as indexer
+
+    sources = indexer.indexers()
+    return render_template(
+        "admin/torrent_indexer/index.html",
+        indexers=sources,
+        configured=bool(sources),
+    )
+
+
+@admin_bp.route("/torrent-indexer/search")
+def torrent_indexer_search():
+    from backend.services import torrent_indexer_service as indexer
+
+    query = request.args.get("q", "").strip()
+    slug = request.args.get("indexer", "all").strip()
+    try:
+        limit = int(request.args.get("limit", indexer.DEFAULT_LIMIT))
+    except ValueError:
+        limit = indexer.DEFAULT_LIMIT
+    if not query:
+        return jsonify({"error": "Informe um termo de busca."}), 400
+    if not indexer.is_configured():
+        return jsonify({"error": "Nenhuma fonte configurada em config/torrent_sources.json."}), 503
+    try:
+        if slug == "all":
+            return jsonify(indexer.search_all(query, limit))
+        return jsonify({"results": indexer.search(query, slug, limit), "errors": {}})
+    except indexer.TorrentIndexerError as exc:
+        return jsonify({"error": str(exc)}), 502
 
 
 @admin_bp.route("/videos/torrent/<int:id>/edit", methods=["GET", "POST"])

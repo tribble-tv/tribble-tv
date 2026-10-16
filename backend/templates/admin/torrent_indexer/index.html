@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% set active_menu = 'torrent_indexer' %}
+{% block extra_css %}
+<style>
+  .ti-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.07); padding:1.5rem; margin-bottom:1.5rem; }
+  .ti-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+  .ti-table th { text-align:left; color:#64748b; font-weight:600; padding:.5rem; border-bottom:1px solid #e2e8f0; }
+  .ti-table td { padding:.5rem; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+  .ti-badge { display:inline-block; padding:.15rem .5rem; border-radius:6px; font-size:.72rem; font-weight:600; background:#ede9fe; color:#6366f1; }
+  .ti-seeds { color:#059669; font-weight:600; }
+  .ti-error { color:#991b1b; font-size:.8rem; margin-top:.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="download-cloud" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Torrent Indexer</h1>
+</div>
+
+{% if not configured %}
+<div class="ti-card">
+  <p><strong>Nenhuma fonte configurada.</strong> Adicione fontes em <code>config/torrent_sources.json</code>
+  (ou aponte <code>TORRENT_SOURCES_FILE</code>). Veja <code>docs/torrent-indexer.md</code>.</p>
+</div>
+{% else %}
+<div class="ti-card">
+  <p class="muted" style="margin-bottom:1rem;">
+    Fontes ativas: <span class="ti-badge" style="background:#d1fae5;color:#065f46;">{{ indexers|length }}</span>
+  </p>
+  <form id="ti-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin:0;flex:1;min-width:220px;">
+      <label>Título</label>
+      <input id="ti-q" placeholder="Ex: Matrix" required>
+    </div>
+    <div class="form-group" style="margin:0;min-width:200px;">
+      <label>Fonte</label>
+      <select id="ti-indexer">
+        <option value="all">Todas</option>
+        {% for slug, label in indexers.items() %}
+          <option value="{{ slug }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit" id="ti-btn"><i data-feather="search"></i> Buscar</button>
+  </form>
+  <div id="ti-status" class="muted" style="margin-top:.75rem;"></div>
+  <div id="ti-errors" class="ti-error"></div>
+</div>
+
+<div class="ti-card" id="ti-results-card" style="display:none;">
+  <table class="ti-table">
+    <thead><tr><th>Título</th><th>Fonte</th><th>Tamanho</th><th>Seeds</th><th></th></tr></thead>
+    <tbody id="ti-results"></tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{% if configured %}
+<script>
+(function () {
+  var form = document.getElementById('ti-form');
+  var status = document.getElementById('ti-status');
+  var errorsBox = document.getElementById('ti-errors');
+  var card = document.getElementById('ti-results-card');
+  var tbody = document.getElementById('ti-results');
+  var createUrl = {{ url_for('admin.videos_torrent_create')|tojson }};
+  var searchUrl = {{ url_for('admin.torrent_indexer_search')|tojson }};
+  var labels = {{ indexers|tojson }};
+
+  function cell(text, cls) {
+    var td = document.createElement('td');
+    if (cls) td.className = cls;
+    td.textContent = text;
+    return td;
+  }
+
+  function render(results) {
+    tbody.textContent = '';
+    results.forEach(function (r) {
+      var tr = document.createElement('tr');
+      var titleTd = document.createElement('td');
+      var strong = document.createElement('strong');
+      strong.textContent = r.title;
+      titleTd.appendChild(strong);
+      if (r.year) titleTd.appendChild(document.createTextNode(' (' + r.year + ')'));
+      tr.appendChild(titleTd);
+      tr.appendChild(cell(labels[r.indexer] || r.indexer));
+      tr.appendChild(cell(r.size));
+      tr.appendChild(cell(String(r.seeds), 'ti-seeds'));
+      var actionTd = document.createElement('td');
+      var a = document.createElement('a');
+      a.className = 'btn btn-primary';
+      a.textContent = 'Importar';
+      a.href = createUrl + '?' + new URLSearchParams({ title: r.title, magnet: r.magnet }).toString();
+      actionTd.appendChild(a);
+      tr.appendChild(actionTd);
+      tbody.appendChild(tr);
+    });
+    card.style.display = results.length ? '' : 'none';
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var q = document.getElementById('ti-q').value.trim();
+    if (!q) return;
+    var btn = document.getElementById('ti-btn');
+    btn.disabled = true;
+    status.textContent = 'Buscando… (a primeira busca em cada fonte pode demorar)';
+    errorsBox.textContent = '';
+    var params = new URLSearchParams({ q: q, indexer: document.getElementById('ti-indexer').value });
+    fetch(searchUrl + '?' + params.toString())
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (out) {
+        if (!out.ok) {
+          status.textContent = '';
+          errorsBox.textContent = out.data.error || 'Falha na busca.';
+          render([]);
+          return;
+        }
+        render(out.data.results);
+        status.textContent = out.data.results.length + ' resultado(s).';
+        var errs = out.data.errors || {};
+        errorsBox.textContent = Object.keys(errs).map(function (k) {
+          return (labels[k] || k) + ': ' + errs[k];
+        }).join(' | ');
+      })
+      .catch(function () { status.textContent = ''; errorsBox.textContent = 'Erro de rede.'; })
+      .finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -17,11 +17,11 @@
     <form method="post">
       <div class="form-group">
         <label>Título do vídeo</label>
-        <input name="title" value="{{ video.title if video else '' }}" placeholder="Ex: Big Buck Bunny (2008)" required>
+        <input name="title" value="{{ video.title if video else (prefill.title if prefill else '') }}" placeholder="Ex: Big Buck Bunny (2008)" required>
       </div>
       <div class="form-group">
         <label>Magnet link ou URL do .torrent</label>
-        <input name="magnet" value="{{ video.source_url if video else '' }}"
+        <input name="magnet" value="{{ video.source_url if video else (prefill.magnet if prefill else '') }}"
                placeholder="magnet:?xt=urn:btih:..." required
                style="font-family:monospace;font-size:.82rem;">
         <p class="muted" style="margin-top:.35rem;">

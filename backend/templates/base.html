@@ -214,6 +214,11 @@
           <i data-feather="video"></i><span>Todos os vídeos</span>
         </a>
       </li>
+      <li class="sidebar-item {% if active_menu == 'torrent_indexer' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.torrent_indexer_index') }}">
+          <i data-feather="download-cloud"></i><span>Torrent Indexer</span>
+        </a>
+      </li>
       <li class="sidebar-item {% if active_menu == 'scraper' %}active{% endif %}">
         <a class="sidebar-link" href="{{ url_for('admin.scraper_index') }}">
           <i data-feather="search"></i><span>Scraper redecanais</span>
