@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Porgs TV{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; font-size: .875rem; background: #f5f7fb; color: #495057; min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+
+    /* WRAPPER */
+    .wrapper { display: flex; width: 100%; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 240px; min-height: 100vh; background: #1a1f2e;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2d3748 #1a1f2e;
+      transition: margin-left .3s ease;
+    }
+    .sidebar::-webkit-scrollbar { width: 5px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
+
+    .sidebar-brand {
+      display: flex; align-items: center; padding: 1.1rem 1.25rem;
+      font-size: 1.05rem; font-weight: 700; color: #e9ecef;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px; margin-right: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; flex-shrink: 0;
+    }
+    .brand-icon svg { width: 16px; height: 16px; }
+
+    .sidebar-nav { padding: 0.5rem 0; list-style: none; }
+    .sidebar-header {
+      padding: .6rem 1.25rem .3rem;
+      font-size: .65rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: #64748b; margin-top: .25rem;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; padding: .55rem 1.25rem;
+      color: rgba(226,232,240,.55); font-size: .82rem; font-weight: 400;
+      border-left: 3px solid transparent; transition: all .2s ease; gap: .65rem;
+    }
+    .sidebar-link:hover { color: rgba(226,232,240,.9); background: rgba(255,255,255,.04); }
+    .sidebar-item.active > .sidebar-link {
+      color: #e2e8f0; background: rgba(99,102,241,.12);
+      border-left-color: #6366f1; font-weight: 500;
+    }
+    .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .7; }
+    .sidebar-item.active > .sidebar-link svg { opacity: 1; }
+
+    /* MAIN */
+    .main { width: 100%; min-height: 100vh; display: flex; flex-direction: column; margin-left: 240px; }
+
+    /* NAVBAR */
+    .navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem 1.5rem; background: #fff;
+      border-bottom: 1px solid #e9ecef; position: sticky; top: 0; z-index: 99;
+    }
+    .navbar-brand { font-weight: 600; font-size: .9rem; color: #1e293b; }
+    .navbar-links { display: flex; align-items: center; gap: .25rem; }
+    .nav-pill {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .35rem .75rem; border-radius: 6px; font-size: .8rem;
+      color: #6c757d; transition: background .2s, color .2s;
+    }
+    .nav-pill:hover { background: #f1f5f9; color: #1e293b; }
+    .nav-pill.active { background: #ede9fe; color: #6366f1; font-weight: 500; }
+    .nav-pill svg { width: 14px; height: 14px; }
+
+    /* CONTENT */
+    .content { flex: 1; padding: 1.5rem; }
+    .page-header { margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+    .page-header h1 { font-size: 1.35rem; font-weight: 700; color: #1e293b; }
+    .page-header .breadcrumb { font-size: .8rem; color: #94a3b8; }
+    .page-header .breadcrumb a { color: #6366f1; }
+    .page-header .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ALERTS */
+    .alert { padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: .85rem; border: 1px solid; display: flex; align-items: center; gap: .5rem; }
+    .alert-success { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+    .alert-error, .alert-danger { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .alert-info { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+
+    /* CARDS */
+    .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04); margin-bottom: 1.5rem; }
+    .card-header { padding: .9rem 1.25rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+    .card-header h5 { font-size: .875rem; font-weight: 600; color: #1e293b; margin: 0; }
+    .card-body { padding: 1.25rem; }
+
+    /* TABLES */
+    .table-wrap { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
+    thead { background: #f8fafc; }
+    th { padding: .75rem 1rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #64748b; border-bottom: 2px solid #e9ecef; text-align: left; }
+    td { padding: .7rem 1rem; border-bottom: 1px solid #f1f5f9; color: #374151; font-size: .85rem; vertical-align: middle; }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: #fafafa; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+    .badge-success { background: #d1fae5; color: #065f46; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-info { background: #dbeafe; color: #1e40af; }
+    .badge-muted { background: #f1f5f9; color: #64748b; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all .2s; line-height: 1.4; }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { background: #6366f1; color: #fff; border-color: #6366f1; }
+    .btn-primary:hover { background: #4f46e5; border-color: #4f46e5; }
+    .btn-danger { background: #ef4444; color: #fff; border-color: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #10b981; color: #fff; border-color: #10b981; }
+    .btn-success:hover { background: #059669; }
+    .btn-secondary { background: #fff; color: #374151; border-color: #d1d5db; }
+    .btn-secondary:hover { background: #f9fafb; }
+    .btn-sm { padding: .3rem .65rem; font-size: .78rem; }
+    button.btn { text-decoration: none; }
+
+    /* FORMS */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: .82rem; font-weight: 500; color: #374151; margin-bottom: .35rem; }
+    input[type=text], input[type=url], input[type=number], input[type=password], select, textarea {
+      width: 100%; padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: 7px;
+      font-size: .85rem; color: #1e293b; background: #fff; transition: border-color .2s, box-shadow .2s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+    input[type=checkbox] { width: auto; margin-right: .4rem; }
+    .form-check { display: flex; align-items: center; gap: .4rem; font-size: .85rem; }
+    .form-actions { display: flex; gap: .5rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; }
+
+    /* ACTIONS */
+    .actions { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+
+    /* UTILS */
+    .muted { color: #94a3b8; font-size: .8rem; }
+    .text-success { color: #059669; }
+    .text-danger { color: #ef4444; }
+    .text-muted { color: #94a3b8; }
+    .mt-1 { margin-top: .25rem; }
+    .mb-1 { margin-bottom: .25rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .gap-2 { gap: .5rem; }
+    .d-flex { display: flex; }
+    .align-center { align-items: center; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .sidebar { margin-left: -240px; }
+      .sidebar.open { margin-left: 0; }
+      .main { margin-left: 0; }
+      .page-header { flex-direction: column; align-items: flex-start; }
+    }
+
+    /* SERVER RESOURCES WIDGET */
+    .res-widget {
+      margin: 1rem .75rem .5rem;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px;
+      padding: .9rem .85rem .75rem;
+    }
+    .res-widget-title {
+      font-size: .63rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: #64748b; margin-bottom: .75rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .res-widget-title svg { width: 12px; height: 12px; }
+    .res-row { display: flex; flex-direction: column; gap: .55rem; }
+    .res-item { display: flex; flex-direction: column; gap: .2rem; }
+    .res-label { display: flex; justify-content: space-between; align-items: center; }
+    .res-label span:first-child { font-size: .7rem; color: rgba(226,232,240,.55); }
+    .res-pct { font-size: .7rem; font-weight: 600; color: #e2e8f0; }
+    .res-bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+    .res-fill {
+      height: 100%; border-radius: 99px;
+      transition: width .6s ease, background-color .6s ease;
+    }
+    .res-sub { font-size: .63rem; color: #475569; margin-top: .05rem; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="wrapper">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i data-feather="tv"></i></div>
+      <span>Porgs TV</span>
+    </div>
+    <ul class="sidebar-nav">
+      <li class="sidebar-header">Infraestrutura</li>
+      <li class="sidebar-item {% if active_menu == 'load_balancer' %}active{% endif %}"><a class="sidebar-link" href="{{ url_for('admin.load_balancer_settings') }}"><i data-feather="git-merge"></i><span>Balanceador de Carga</span></a></li>
+      <li class="sidebar-item {% if active_menu == 'media_servers' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.media_servers_index') }}">
+          <i data-feather="server"></i><span>Servidores de Mídia</span>
+        </a>
+      </li>
+      <li class="sidebar-header">Vídeos</li>
+      <li class="sidebar-item {% if active_menu == 'videos' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.videos_index') }}">
+          <i data-feather="video"></i><span>Todos os vídeos</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'scraper' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.scraper_index') }}">
+          <i data-feather="search"></i><span>Scraper redecanais</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'reidoscanais' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.reidoscanais_index') }}">
+          <i data-feather="radio"></i><span>ReidosCanais API</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'megaembed' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.megaembed_index') }}">
+          <i data-feather="layers"></i><span>MegaEmbed</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'youtube' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin_youtube.index') }}">
+          <i data-feather="youtube"></i><span>YouTube</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'kodi_sources' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.kodi_sources_index') }}">
+          <i data-feather="box"></i><span>Kodi Sources</span>
+        </a>
+      </li>
+      <li class="sidebar-header">Jellyfin</li>
+      <li class="sidebar-item {% if active_menu == 'jellyfin_servers' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.jellyfin_servers_index') }}">
+          <i data-feather="cloud"></i><span>Servidores</span>
+        </a>
+      </li>
+      <li class="sidebar-item {% if active_menu == 'jellyfin_items' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin.jellyfin_items_index') }}">
+          <i data-feather="film"></i><span>Catálogo</span>
+        </a>
+      </li>
+      <li class="sidebar-header">Acesso externo</li>
+      <li class="sidebar-item {% if active_menu == 'client_accounts' %}active{% endif %}">
+        <a class="sidebar-link" href="{{ url_for('admin_xtream.xtream_users_index') }}">
+          <i data-feather="users"></i><span>Contas de Cliente</span>
+        </a>
+      </li>
+      <li class="sidebar-item">
+        <a class="sidebar-link" href="{{ config.CLIENT_PUBLIC_URL }}/playlist.m3u" target="_blank">
+          <i data-feather="list"></i><span>Playlist M3U</span>
+        </a>
+      </li>
+      <li class="sidebar-item">
+        <a class="sidebar-link" href="{{ config.CLIENT_PUBLIC_URL }}/player_api.php" target="_blank">
+          <i data-feather="zap"></i><span>Xtream API</span>
+        </a>
+      </li>
+    </ul>
+
+    <!-- RECURSOS DO SERVIDOR -->
+    <div class="res-widget" id="res-widget">
+      <div class="res-widget-title">
+        <i data-feather="cpu"></i> Recursos do Servidor
+      </div>
+      <div class="res-row">
+        <div class="res-item">
+          <div class="res-label">
+            <span>CPU</span>
+            <span class="res-pct" id="res-cpu-pct">—</span>
+          </div>
+          <div class="res-bar"><div class="res-fill" id="res-cpu-fill" style="width:0%"></div></div>
+        </div>
+        <div class="res-item">
+          <div class="res-label">
+            <span>RAM</span>
+            <span class="res-pct" id="res-ram-pct">—</span>
+          </div>
+          <div class="res-bar"><div class="res-fill" id="res-ram-fill" style="width:0%"></div></div>
+          <div class="res-sub" id="res-ram-sub"></div>
+        </div>
+        <div class="res-item">
+          <div class="res-label">
+            <span>Disco '/'</span>
+            <span class="res-pct" id="res-disk-pct">—</span>
+          </div>
+          <div class="res-bar"><div class="res-fill" id="res-disk-fill" style="width:0%"></div></div>
+          <div class="res-sub" id="res-disk-sub"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <nav class="navbar">
+      <span class="navbar-brand"><i data-feather="tv" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;color:#6366f1;"></i>Porgs TV</span>
+      <div class="navbar-links">
+        <a class="nav-pill {% if active_menu == 'media_servers' %}active{% endif %}" href="{{ url_for('admin.media_servers_index') }}">
+          <i data-feather="server"></i> Servidores
+        </a>
+        <a class="nav-pill {% if active_menu == 'jellyfin_servers' %}active{% endif %}" href="{{ url_for('admin.jellyfin_servers_index') }}">
+          <i data-feather="cloud"></i> Jellyfin
+        </a>
+        <a class="nav-pill {% if active_menu == 'jellyfin_items' %}active{% endif %}" href="{{ url_for('admin.jellyfin_items_index') }}">
+          <i data-feather="film"></i> Catálogo
+        </a>
+        <a class="nav-pill" href="{{ config.CLIENT_PUBLIC_URL }}/playlist.m3u" target="_blank">
+          <i data-feather="list"></i> M3U
+        </a>
+        <a class="nav-pill {% if active_menu == 'youtube' %}active{% endif %}" href="{{ url_for('admin_youtube.index') }}">
+          <i data-feather="youtube"></i> YouTube
+        </a>
+        <a class="nav-pill {% if active_menu == 'kodi_sources' %}active{% endif %}" href="{{ url_for('admin.kodi_sources_index') }}">
+          <i data-feather="box"></i> Kodi
+        </a>
+        <a class="nav-pill {% if active_menu == 'client_accounts' %}active{% endif %}" href="{{ url_for('admin_xtream.xtream_users_index') }}">
+          <i data-feather="users"></i> Clientes
+        </a>
+      </div>
+    </nav>
+
+    <main class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {% if category == 'success' %}<i data-feather="check-circle"></i>
+            {% elif category == 'error' or category == 'danger' %}<i data-feather="alert-circle"></i>
+            {% else %}<i data-feather="info"></i>{% endif %}
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+<script>feather.replace();</script>
+{% block extra_js %}{% endblock %}
+<script>
+(function () {
+  function pctColor(pct) {
+    if (pct >= 85) return '#ef4444';
+    if (pct >= 65) return '#f59e0b';
+    return '#6366f1';
+  }
+  function setBar(fillId, pct) {
+    const el = document.getElementById(fillId);
+    if (!el) return;
+    el.style.width = pct + '%';
+    el.style.background = pctColor(pct);
+  }
+  function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+  function fetchStats() {
+    fetch('/admin/system-stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d || d.error) return;
+        setText('res-cpu-pct',  d.cpu_percent  + '%');
+        setText('res-ram-pct',  d.ram_percent  + '%');
+        setText('res-disk-pct', d.disk_percent + '%');
+        setBar('res-cpu-fill',  d.cpu_percent);
+        setBar('res-ram-fill',  d.ram_percent);
+        setBar('res-disk-fill', d.disk_percent);
+        setText('res-ram-sub',  d.ram_used_gb + ' GB / ' + d.ram_total_gb + ' GB');
+        setText('res-disk-sub', d.disk_used_gb + ' GB / ' + d.disk_total_gb + ' GB');
+      })
+      .catch(() => {});
+  }
+  fetchStats();
+  setInterval(fetchStats, 5000);
+})();
+</script>
+</body>
+</html>

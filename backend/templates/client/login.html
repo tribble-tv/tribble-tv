@@ -1,0 +1,111 @@
+{% extends 'client/base.html' %}
+{% block title %}Login | Porgs TV{% endblock %}
+{% block extra_css %}
+<style>
+  .login-shell {
+    min-height: calc(100vh - 260px);
+    display: grid;
+    place-items: center;
+    padding: 2rem 0;
+  }
+
+  .login-panel {
+    width: min(100%, 420px);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    padding: 2rem;
+  }
+
+  .login-panel h1 {
+    font-size: 1.65rem;
+    margin-bottom: .35rem;
+  }
+
+  .login-panel p {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .login-form {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .login-field {
+    display: grid;
+    gap: .45rem;
+  }
+
+  .login-field label {
+    color: var(--text-main);
+    font-size: .86rem;
+    font-weight: 700;
+  }
+
+  .login-field input {
+    width: 100%;
+    min-height: 46px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: #0b0b0c;
+    color: var(--text-main);
+    padding: .75rem .9rem;
+    font: inherit;
+  }
+
+  .login-field input:focus {
+    outline: none;
+    border-color: rgba(255,255,255,.38);
+    box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+  }
+
+  .login-submit {
+    min-height: 46px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--primary);
+    color: #000;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    transition: var(--transition-smooth);
+  }
+
+  .login-submit:hover {
+    background: var(--primary-hover);
+  }
+
+  .login-submit svg {
+    width: 17px;
+    height: 17px;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<section class="login-shell">
+  <div class="login-panel">
+    <h1>Entrar</h1>
+    <p>Acesse o catalogo com a conta criada pelo administrador.</p>
+    <form class="login-form" method="post" action="{{ url_for('client.login') }}">
+      <input type="hidden" name="next" value="{{ next_url }}">
+      <div class="login-field">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+      </div>
+      <div class="login-field">
+        <label for="password">Senha</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="login-submit" type="submit">
+        <i data-feather="log-in"></i>
+        Entrar
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,758 @@
+{% extends 'client/base.html' %}
+{% set active_client_menu = 'catalog' %}
+
+{% block extra_css %}
+<style>
+  /* HERO SECTION */
+  .hero-hub {
+    background: linear-gradient(to right, rgba(0,0,0,0.85) 35%, rgba(0,0,0,0.2) 100%), 
+                url('/static/apple_tv_backdrop.png') no-repeat center center;
+    background-size: cover;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 5rem 3.5rem;
+    margin-bottom: 3rem;
+    text-align: left;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 380px;
+  }
+
+  .hero-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hero-hub h1 {
+    font-size: 3rem; font-weight: 800; margin-bottom: 1rem;
+    letter-spacing: -0.04em;
+    color: #ffffff;
+    max-width: 600px;
+    line-height: 1.15;
+  }
+
+  .hero-hub p {
+    color: #e5e5ea; font-size: 1.1rem;
+    max-width: 580px; margin: 0 0 2rem 0;
+    line-height: 1.5;
+  }
+
+  .hero-btn {
+    background: #ffffff;
+    color: #000000;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.8rem 2.2rem;
+    border-radius: 99px;
+    align-self: flex-start;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+  }
+
+  .hero-btn:hover {
+    transform: scale(1.03);
+    background: #f5f5f7;
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+  }
+
+  /* FILTER BAR */
+  .filter-container {
+    background: rgba(21, 21, 21, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px; padding: 1.75rem; margin-bottom: 3rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+    box-shadow: var(--card-shadow);
+  }
+
+  .search-wrap { position: relative; width: 100%; }
+
+  .search-wrap input {
+    width: 100%; padding: 1rem 1.25rem 1rem 3.2rem;
+    background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; color: #fff; font-size: 1rem;
+    font-family: inherit; transition: var(--transition-smooth);
+  }
+
+  .search-wrap input:focus {
+    outline: none; border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.08); background: #242426;
+  }
+
+  .search-wrap svg {
+    position: absolute; left: 1.25rem; top: 50%;
+    transform: translateY(-50%); color: var(--text-muted);
+    pointer-events: none; width: 20px; height: 20px;
+  }
+
+  .filter-group { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+
+  .filter-label {
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    color: var(--text-muted); letter-spacing: 0.08em; min-width: 100px;
+  }
+
+  .filter-options { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+  .filter-pill {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted); padding: 0.5rem 1.25rem; border-radius: 99px;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .filter-pill:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .filter-pill.active {
+    background: #ffffff; border-color: #ffffff;
+    color: #000000; box-shadow: 0 4px 12px rgba(255,255,255,0.25);
+  }
+
+  /* CATALOG HEADER */
+  .catalog-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2rem; padding: 0 0.25rem;
+  }
+
+  .catalog-title {
+    font-size: 1.5rem; font-weight: 700;
+    display: flex; align-items: center; gap: 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .catalog-count { color: var(--text-muted); font-size: 0.9rem; }
+
+  /* GRID */
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 2rem;
+  }
+
+  /* CARD */
+  .card-media {
+    background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; overflow: hidden; display: flex;
+    flex-direction: column; height: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    transition: var(--transition-smooth); position: relative;
+  }
+
+  .card-media:hover {
+    transform: scale(1.03); border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+  }
+
+  .card-thumb-wrap {
+    position: relative; width: 100%; padding-top: 56.25%;
+    background: #000; overflow: hidden;
+  }
+
+  .card-thumb {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; transition: var(--transition-smooth);
+  }
+
+  .card-thumb-fallback {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    background: linear-gradient(135deg, #1c1c1e 0%, #000000 100%); gap: 0.5rem;
+  }
+
+  .card-thumb-fallback.grad-1 { background: linear-gradient(135deg, #1c1c1e 0%, #000000 100%); }
+  .card-thumb-fallback.grad-2 { background: linear-gradient(135deg, #1c1c1e 0%, #151517 100%); }
+  .card-thumb-fallback.grad-3 { background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%); }
+  .card-thumb-fallback.grad-4 { background: linear-gradient(135deg, #151517 0%, #000000 100%); }
+
+  .card-thumb-fallback svg { width: 32px; height: 32px; color: #ffffff; opacity: 0.5; }
+
+  .card-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: var(--transition-smooth);
+  }
+
+  .card-media:hover .card-overlay { opacity: 1; }
+
+  .card-play-btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: #ffffff; color: #000000;
+    display: flex; align-items: center; justify-content: center;
+    transform: scale(0.8); transition: var(--transition-smooth);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+
+  .card-play-btn svg { width: 20px; height: 20px; fill: currentColor; margin-left: 2px; }
+
+  .card-media:hover .card-play-btn { transform: scale(1); }
+
+  .card-body-media {
+    padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1;
+  }
+
+  .card-meta {
+    display: flex; align-items: center; gap: 0.5rem;
+    margin-bottom: 0.75rem; flex-wrap: wrap;
+  }
+
+  .card-badge {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.25rem 0.6rem; border-radius: 6px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  }
+
+  .badge-hls     { background: rgba(255,255,255,0.08); color: #ffffff; border: 1px solid rgba(255,255,255,0.12); }
+  .badge-jellyfin{ background: rgba(6,182,212,0.12);  color: #22d3ee; border: 1px solid rgba(6,182,212,0.2); }
+  .badge-youtube { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .badge-embed   { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+
+  .card-category {
+    background: rgba(255,255,255,0.06); color: var(--text-muted);
+    padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600;
+  }
+
+  .card-title-media {
+    font-size: 1rem; font-weight: 700; line-height: 1.4; color: #fff;
+    margin-bottom: 0.35rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; height: 2.8rem;
+  }
+
+  .card-synopsis {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+    min-height: 2.2em;
+  }
+
+  .card-footer-media {
+    margin-top: auto; display: flex; justify-content: space-between;
+    align-items: center; font-size: 0.78rem; color: var(--text-muted);
+    padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .card-date { display: flex; align-items: center; gap: 0.25rem; }
+  .card-date svg { width: 12px; height: 12px; }
+
+  /* SKELETON LOADER */
+  .card-skeleton {
+    background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; overflow: hidden; height: 280px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* NO RESULTS */
+  .no-results {
+    grid-column: 1 / -1; background: #1c1c1e;
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 14px;
+    padding: 4rem 2rem; text-align: center; box-shadow: var(--card-shadow);
+    display: none; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1rem;
+  }
+
+  .no-results svg { width: 60px; height: 60px; color: var(--text-muted); opacity: 0.5; }
+  .no-results h3 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+  .no-results p { color: var(--text-muted); font-size: 0.9rem; max-width: 400px; }
+
+  .btn-reset {
+    margin-top: 1rem; background: #ffffff; border: none; color: #000000;
+    padding: 0.6rem 1.5rem; border-radius: 99px; font-size: 0.85rem;
+    font-weight: 700; cursor: pointer; transition: var(--transition-smooth);
+  }
+
+  .btn-reset:hover { background: #e5e5ea; }
+
+  /* PAGINATION */
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 3rem 0;
+    flex-wrap: wrap;
+  }
+
+  .page-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    min-width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+    padding: 0 0.5rem;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .page-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+
+  .page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .page-dots {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid rgba(99,102,241,0.2);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite; display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<div class="hero-hub">
+  <div class="hero-tag"><i data-feather="film" style="width:14px;height:14px;"></i> Original Porgs TV+</div>
+  <h1>Entretenimento Sem Limites</h1>
+  <p>Assista aos seus canais ao vivo, filmes, séries e vídeos do YouTube favoritos diretamente pelo player integrado do sistema.</p>
+  <button class="hero-btn" onclick="document.querySelector('.filter-container').scrollIntoView({behavior: 'smooth'})">Assistir agora</button>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-container">
+  <div class="search-wrap">
+    <i data-feather="search"></i>
+    <input type="text" id="catalog-search" placeholder="O que você quer assistir hoje? Digite o título..." autocomplete="off">
+  </div>
+
+  <!-- CATEGORIAS -->
+  <div class="filter-group">
+    <div class="filter-label">Categorias</div>
+    <div class="filter-options" id="category-pills">
+      <button class="filter-pill active" data-filter-type="category" data-filter-value="all">Todos</button>
+      {% for category in categories %}
+        {% if category %}
+          <button class="filter-pill" data-filter-type="category" data-filter-value="{{ category|lower }}">{{ category }}</button>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ORIGEM -->
+  <div class="filter-group">
+    <div class="filter-label">Origem</div>
+    <div class="filter-options">
+      <button class="filter-pill active" data-filter-type="provider" data-filter-value="all">Todos</button>
+      <button class="filter-pill" data-filter-type="provider" data-filter-value="jellyfin">Jellyfin</button>
+      <button class="filter-pill" data-filter-type="provider" data-filter-value="youtube">YouTube</button>
+      <button class="filter-pill" data-filter-type="provider" data-filter-value="hls">HLS Local</button>
+      <button class="filter-pill" data-filter-type="provider" data-filter-value="embed">Outros Embeds</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATALOG HEADER -->
+<div class="catalog-header">
+  <div class="catalog-title">
+    <i data-feather="film" style="color: var(--primary); width: 20px; height: 20px;"></i>
+    <span>Catálogo Geral</span>
+  </div>
+  <div class="catalog-count" id="catalog-count">Carregando…</div>
+</div>
+
+<!-- GRID -->
+<div class="catalog-grid" id="catalog-grid">
+  <!-- Skeleton inicial -->
+  {% for _ in range(12) %}
+  <div class="card-skeleton"></div>
+  {% endfor %}
+
+  <!-- No results -->
+  <div class="no-results" id="no-results">
+    <i data-feather="frown"></i>
+    <h3>Nenhum resultado encontrado</h3>
+    <p>Não encontramos conteúdos correspondentes aos filtros. Tente ajustar o texto de busca ou selecione outra categoria.</p>
+    <button class="btn-reset" id="btn-reset-filters">Limpar Filtros</button>
+  </div>
+</div>
+</div>
+
+<!-- PAGINATION -->
+<div class="pagination-container" id="pagination-container"></div>
+
+<div style="height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 2rem;">
+  <div class="spinner" id="spinner"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const grid        = document.getElementById('catalog-grid');
+  const countEl     = document.getElementById('catalog-count');
+  const noResults   = document.getElementById('no-results');
+  const spinner     = document.getElementById('spinner');
+  const searchInput = document.getElementById('catalog-search');
+  const paginationContainer = document.getElementById('pagination-container');
+
+  let activeCategory = 'all';
+  let activeProvider = 'all';
+  let searchQuery    = '';
+  let currentPage    = 1;
+  let totalPages     = 1;
+  let totalCount     = 0;
+  let loading        = false;
+  let searchTimer    = null;
+
+  const BADGE = {
+    youtube:  '<span class="card-badge badge-youtube">YouTube</span>',
+    embed:    '<span class="card-badge badge-embed">Embed</span>',
+    jellyfin: '<span class="card-badge badge-jellyfin">Jellyfin</span>',
+    hls:      '<span class="card-badge badge-hls">HLS</span>',
+    series:   '<span class="card-badge" style="background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2);">Série</span>',
+  };
+
+  const GRADS = ['grad-1','grad-2','grad-3','grad-4'];
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function progressHtml(item) {
+    const pct = Math.max(0, Math.min(100, Number(item.progress_percent || 0)));
+    if (!pct && !item.completed) return '';
+    const label = item.completed ? 'Concluido' : `${Math.round(pct)}% assistido`;
+    return `<div style="margin-top:.55rem;">
+      <div style="height:4px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden;">
+        <div style="height:100%;width:${item.completed ? 100 : pct}%;background:var(--primary);"></div>
+      </div>
+      <div style="margin-top:.25rem;color:var(--text-muted);font-size:.72rem;">${label}</div>
+    </div>`;
+  }
+
+  // ── Regular video card ─────────────────────────────────────────────────────
+  function cardHtml(v) {
+    const id = v.id;
+    const thumb = v.thumbnail_url
+      ? `<img src="${esc(v.thumbnail_url)}" class="card-thumb" alt="${esc(v.title)}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <div class="card-thumb-fallback ${GRADS[id % 4]}" style="display:none;">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+           <span>${esc(v.title.slice(0,15))}…</span>
+         </div>`
+      : `<div class="card-thumb-fallback ${GRADS[id % 4]}">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+           <span>Porgs TV</span>
+         </div>`;
+
+    return `<a href="/client/player/${id}" class="card-media">
+      <div class="card-thumb-wrap">
+        ${thumb}
+        <div class="card-overlay"><div class="card-play-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div></div>
+      </div>
+      <div class="card-body-media">
+        <div class="card-meta">
+          ${BADGE[v.provider] || BADGE.hls}
+          <span class="card-category">${esc(v.category)}</span>
+        </div>
+        <h3 class="card-title-media">${esc(v.title)}</h3>
+        ${v.synopsis ? `<p class="card-synopsis">${esc(v.synopsis)}</p>` : '<p class="card-synopsis"></p>'}
+        ${progressHtml(v)}
+        <div class="card-footer-media">
+          <div class="card-date">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>${v.created_at}</span>
+          </div>
+          <span style="color:var(--primary);font-weight:600;">Assistir →</span>
+        </div>
+      </div>
+    </a>`;
+  }
+
+  // ── Series group card ──────────────────────────────────────────────────────
+  function seriesCardHtml(s) {
+    const thumb = s.thumbnail_url
+      ? `<img src="${esc(s.thumbnail_url)}" class="card-thumb" alt="${esc(s.title)}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <div class="card-thumb-fallback grad-1" style="display:none;">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+           <span>${esc(s.title.slice(0,15))}…</span>
+         </div>`
+      : `<div class="card-thumb-fallback grad-1">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+           <span>Série</span>
+         </div>`;
+
+    return `<a href="/client/series/${esc(s.slug)}" class="card-media">
+      <div class="card-thumb-wrap">
+        ${thumb}
+        <div class="card-overlay"><div class="card-play-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div></div>
+      </div>
+      <div class="card-body-media">
+        <div class="card-meta">
+          ${BADGE.series}
+          <span class="card-category">${s.season_count} temp.</span>
+        </div>
+        <h3 class="card-title-media">${esc(s.title)}</h3>
+        ${s.synopsis ? `<p class="card-synopsis">${esc(s.synopsis)}</p>` : '<p class="card-synopsis"></p>'}
+        ${progressHtml(s)}
+        <div class="card-footer-media">
+          <span style="color:var(--text-muted);font-size:.75rem;">${s.episode_count} episódios</span>
+          <span style="color:var(--primary);font-weight:600;">Ver série →</span>
+        </div>
+      </div>
+    </a>`;
+  }
+
+  // ── DOM helpers ────────────────────────────────────────────────────────────
+  function clearSkeletons() {
+    grid.querySelectorAll('.card-skeleton').forEach(el => el.remove());
+  }
+
+  // ── Fetch & render ─────────────────────────────────────────────────────────
+  async function loadPage(page) {
+    if (loading) return;
+    loading = true;
+    currentPage = page;
+    spinner.style.display = 'block';
+    
+    // Clear existing results
+    clearSkeletons();
+    noResults.style.display = 'none';
+    grid.querySelectorAll('.card-media').forEach(el => el.remove());
+    countEl.textContent = 'Carregando…';
+    paginationContainer.innerHTML = '';
+
+    const isSeries = activeCategory.toLowerCase() === 'series' || activeCategory.toLowerCase() === 'séries';
+    const endpoint = isSeries ? '/client/api/series' : '/client/api/videos';
+
+    const params = new URLSearchParams();
+    params.set('page', currentPage);
+    params.set('per_page', 100);
+    if (searchQuery) params.set('q', searchQuery);
+    if (!isSeries) {
+      if (activeCategory && activeCategory !== 'all') params.set('category', activeCategory);
+      if (activeProvider && activeProvider !== 'all') params.set('provider', activeProvider);
+    }
+
+    try {
+      const res  = await fetch(endpoint + '?' + params.toString());
+      const data = await res.json();
+
+      const items  = data.videos || data.series || [];
+      totalCount   = data.total;
+      totalPages   = data.pages;
+
+      items.forEach(item => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = isSeries ? seriesCardHtml(item) : cardHtml(item);
+        grid.insertBefore(wrapper.firstElementChild, noResults);
+      });
+
+      const visible = grid.querySelectorAll('.card-media').length;
+      const label   = isSeries ? 'séries' : 'conteúdos';
+      if (totalCount > 0) {
+        const startItem = (currentPage - 1) * 100 + 1;
+        const endItem = (currentPage - 1) * 100 + visible;
+        countEl.textContent = `Exibindo ${startItem}-${endItem} de ${totalCount} ${label}`;
+      } else {
+        countEl.textContent = `Nenhum resultado`;
+      }
+
+      noResults.style.display = (totalCount === 0) ? 'flex' : 'none';
+      
+      renderPagination();
+    } catch (e) {
+      countEl.textContent = 'Erro ao carregar';
+    } finally {
+      loading = false;
+      spinner.style.display = 'none';
+    }
+  }
+
+  // ── Pagination rendering ───────────────────────────────────────────────────
+  function renderPagination() {
+    paginationContainer.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-btn';
+    prevBtn.innerHTML = '<i data-feather="chevron-left" style="width:16px;height:16px;"></i>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        loadPage(currentPage - 1);
+        scrollToCatalog();
+      }
+    });
+    paginationContainer.appendChild(prevBtn);
+
+    // Page numbers
+    const range = 2; // how many pages to show around current page
+    let pages = [];
+
+    // Always show first page
+    pages.push(1);
+
+    for (let i = currentPage - range; i <= currentPage + range; i++) {
+      if (i > 1 && i < totalPages) {
+        pages.push(i);
+      }
+    }
+
+    // Always show last page
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+
+    // Remove duplicates and sort
+    pages = [...new Set(pages)].sort((a, b) => a - b);
+
+    // Render buttons with ellipsis
+    let lastPage = 0;
+    pages.forEach(p => {
+      if (lastPage !== 0) {
+        if (p - lastPage === 2) {
+          createPageButton(lastPage + 1);
+        } else if (p - lastPage > 2) {
+          const dots = document.createElement('span');
+          dots.className = 'page-dots';
+          dots.textContent = '...';
+          paginationContainer.appendChild(dots);
+        }
+      }
+      createPageButton(p);
+      lastPage = p;
+    });
+
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-btn';
+    nextBtn.innerHTML = '<i data-feather="chevron-right" style="width:16px;height:16px;"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < totalPages) {
+        loadPage(currentPage + 1);
+        scrollToCatalog();
+      }
+    });
+    paginationContainer.appendChild(nextBtn);
+
+    if (window.feather) {
+      feather.replace();
+    }
+  }
+
+  function createPageButton(p) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+    btn.textContent = p;
+    btn.addEventListener('click', () => {
+      if (p !== currentPage) {
+        loadPage(p);
+        scrollToCatalog();
+      }
+    });
+    paginationContainer.appendChild(btn);
+  }
+
+  function scrollToCatalog() {
+    const filterContainer = document.querySelector('.filter-container');
+    if (filterContainer) {
+      filterContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────────
+  searchInput.addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      loadPage(1);
+    }, 350);
+  });
+
+  // ── Filter pills ───────────────────────────────────────────────────────────
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const type  = pill.dataset.filterType;
+      const value = pill.dataset.filterValue;
+
+      document.querySelectorAll(`.filter-pill[data-filter-type="${type}"]`).forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      if (type === 'category') activeCategory = value;
+      else if (type === 'provider') activeProvider = value;
+
+      loadPage(1);
+    });
+  });
+
+  // ── Reset ──────────────────────────────────────────────────────────────────
+  document.getElementById('btn-reset-filters').addEventListener('click', () => {
+    searchInput.value = '';
+    searchQuery    = '';
+    activeCategory = 'all';
+    activeProvider = 'all';
+
+    document.querySelectorAll('.filter-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.filterValue === 'all');
+    });
+
+    loadPage(1);
+  });
+
+  // ── Initial load ───────────────────────────────────────────────────────────
+  loadPage(1);
+})();
+</script>
+{% endblock %}

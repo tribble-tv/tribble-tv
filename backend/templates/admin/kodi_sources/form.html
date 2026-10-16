@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% set active_menu = 'kodi_sources' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.kodi_sources_index') }}">Kodi Sources</a> / Editar</div>
+    <h1><i data-feather="edit-2" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Editar fonte Kodi</h1>
+  </div>
+  <a class="btn btn-secondary" href="{{ url_for('admin.kodi_sources_index') }}"><i data-feather="arrow-left"></i> Voltar</a>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <div class="card-body">
+    <form method="post">
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" name="name" value="{{ source.name }}" required>
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select name="source_kind">
+          <option value="addon" {% if source.source_kind == 'addon' %}selected{% endif %}>Repo/add-on</option>
+          <option value="m3u" {% if source.source_kind == 'm3u' or not source.source_kind %}selected{% endif %}>M3U/HLS</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>URL da fonte</label>
+        <input type="url" name="source_url" value="{{ source.effective_source_url }}" required>
+      </div>
+      <div class="form-group">
+        <label>Add-on ID</label>
+        <input type="text" name="addon_id" value="{{ source.addon_id or '' }}" placeholder="plugin.video.exemplo">
+      </div>
+      <div class="form-group">
+        <label>Caminho inicial</label>
+        <input type="text" name="entry_path" value="{{ source.entry_path or '' }}" placeholder="plugin://plugin.video.exemplo/">
+      </div>
+      <div class="form-group">
+        <label>Categoria padrao</label>
+        <input type="text" name="default_category" value="{{ source.default_category or '' }}">
+      </div>
+      <div class="form-group">
+        <label>Sync min</label>
+        <input type="number" min="0" name="sync_interval_minutes" value="{{ source.sync_interval_minutes or '' }}">
+      </div>
+      <label class="form-check" style="margin-bottom:1rem;">
+        <input type="checkbox" name="is_active" {% if source.is_active %}checked{% endif %}>
+        Fonte ativa
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin.kodi_sources_index') }}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

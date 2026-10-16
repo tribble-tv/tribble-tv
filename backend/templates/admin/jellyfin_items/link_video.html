@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Vincular {{ item.name }}</h1>
+<p class="muted">Servidor: {{ item.jellyfin_server.name }} · Item Jellyfin: {{ item.jellyfin_item_id }}</p>
+<form method="post">
+  <label>Vídeo
+    <select name="video_id">
+      <option value="">— Criar novo vídeo automaticamente —</option>
+      {% for video in videos %}<option value="{{ video.id }}" {% if item.video_id == video.id %}selected{% endif %}>{{ video.title }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit">Vincular</button>
+  <a href="{{ url_for('admin.jellyfin_items_index') }}">Cancelar</a>
+</form>
+{% endblock %}

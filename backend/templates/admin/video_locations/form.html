@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% set active_menu = 'videos' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Vídeos</a> / <a href="{{ url_for('admin.video_locations_index', id=video.id) }}">{{ video.title }}</a> / {{ 'Editar' if location.id else 'Nova' }}</div>
+    <h1>{{ 'Editar' if location.id else 'Nova' }} localização</h1>
+  </div>
+</div>
+<div class="card" style="max-width:580px;">
+  <div class="card-header"><h5><i data-feather="map-pin" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>{{ video.title }}</h5></div>
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="video_id" value="{{ video.id }}">
+      <div class="form-group">
+        <label>Servidor de mídia</label>
+        <select name="media_server_id" required>
+          {% for server in servers %}
+            <option value="{{ server.id }}" {% if location.media_server_id == server.id %}selected{% endif %}>{{ server.name }} &mdash; {{ server.public_url }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Storage path</label>
+        <input name="storage_path" value="{{ location.storage_path or '' }}" placeholder="filme-titulo/master.m3u8" required>
+        <p class="muted" style="margin-top:.25rem;">Relativo a <code>MEDIA_ROOT/hls/</code> na go-engine.</p>
+      </div>
+      <div class="form-group">
+        <label>Tipo de origem</label>
+        <select name="source_type">
+          <option value="hls" {% if location.source_type == 'hls' or not location.source_type %}selected{% endif %}>HLS local</option>
+          <option value="jellyfin" {% if location.source_type == 'jellyfin' %}selected{% endif %}>Jellyfin proxy</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:1.5rem;margin-bottom:1rem;">
+        <div class="form-check"><input type="checkbox" name="is_primary" id="is_primary" {% if location.is_primary %}checked{% endif %}><label for="is_primary" style="margin:0;">Localização primária</label></div>
+        <div class="form-check"><input type="checkbox" name="is_active" id="is_active" {% if location.is_active %}checked{% endif %}><label for="is_active" style="margin:0;">Ativa</label></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin.video_locations_index', id=video.id) }}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

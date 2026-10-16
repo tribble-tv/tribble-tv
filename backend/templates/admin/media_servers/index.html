@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% set active_menu = 'media_servers' %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="server" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Servidores de Mídia</h1>
+  <a class="btn btn-primary" href="{{ url_for('admin.media_servers_create') }}"><i data-feather="plus"></i> Novo servidor</a>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Nome</th><th>URL pública</th><th>Tipo</th><th>Prioridade</th><th>Conexões</th><th>Status</th><th>Health</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for server in servers %}
+    <tr>
+      <td><strong>{{ server.name }}</strong></td>
+      <td><span class="muted">{{ server.public_url }}</span></td>
+      <td>
+        <span class="badge badge-info">{{ server.server_type or 'go-engine' }}</span>
+        {% if not server.is_stream_capable %}<span class="muted" style="margin-left:.4rem;">inventario</span>{% endif %}
+      </td>
+      <td>{{ server.priority }}</td>
+      <td>{{ server.current_connections }}/{{ server.max_connections or '∞' }}</td>
+      <td>
+        {% if server.is_active %}<span class="badge badge-success"><i data-feather="check" style="width:10px;height:10px;"></i> ativo</span>
+        {% else %}<span class="badge badge-danger">inativo</span>{% endif %}
+      </td>
+      <td>
+        {% if server.health_status == 'healthy' %}<span class="badge badge-success">healthy</span>
+        {% elif server.health_status %}<span class="badge badge-danger">{{ server.health_status }}</span>
+        {% else %}<span class="badge badge-muted">—</span>{% endif %}
+      </td>
+      <td class="actions">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.media_servers_edit', id=server.id) }}"><i data-feather="edit-2"></i> Editar</a>
+        <form method="post" action="{{ url_for('admin.media_servers_health', id=server.id) }}" style="display:inline">
+          <button class="btn btn-secondary btn-sm" type="submit"><i data-feather="activity"></i> Health</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.media_servers_delete', id=server.id) }}" style="display:inline" onsubmit="return confirm('Tem certeza que deseja excluir este servidor?');">
+          <button class="btn btn-danger btn-sm" type="submit"><i data-feather="trash-2"></i> Excluir</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not servers %}
+    <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum servidor cadastrado.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% set active_menu = 'megaembed' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Videos</a> / MegaEmbed</div>
+    <h1><i data-feather="layers" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>MegaEmbed</h1>
+  </div>
+  <a class="btn btn-secondary" href="{{ url_for('admin.videos_index') }}"><i data-feather="arrow-left"></i> Voltar</a>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <div class="card-header">
+    <h5><i data-feather="plus-square" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>Novo embed MegaEmbed</h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      <div class="form-group">
+        <label>Titulo no catalogo</label>
+        <input name="title" value="{{ form.title }}" placeholder="Ex: Obsessao" required>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select name="media_type" id="media-type">
+            <option value="movie" {% if form.media_type == 'movie' %}selected{% endif %}>Filme</option>
+            <option value="series" {% if form.media_type == 'series' %}selected{% endif %}>Serie</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Audio</label>
+          <select name="audio" id="audio">
+            <option value="dubbed" {% if form.audio == 'dubbed' %}selected{% endif %}>Dublado</option>
+            <option value="subtitled" {% if form.audio == 'subtitled' %}selected{% endif %}>Legendado</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:1rem;">
+        <div class="form-group">
+          <label>ID</label>
+          <select name="id_type" id="id-type">
+            <option value="tmdb" {% if form.id_type == 'tmdb' %}selected{% endif %}>TMDB</option>
+            <option value="imdb" {% if form.id_type == 'imdb' %}selected{% endif %}>IMDB</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ID externo</label>
+          <input name="external_id" value="{{ form.external_id }}" placeholder="Ex: 1130022 ou tt1234567" required>
+        </div>
+      </div>
+
+      <div id="episode-fields" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;">
+        <div class="form-group">
+          <label>Temporada</label>
+          <input type="number" min="1" name="season" value="{{ form.season }}" placeholder="1">
+        </div>
+        <div class="form-group">
+          <label>Episodio</label>
+          <input type="number" min="1" name="episode" value="{{ form.episode }}" placeholder="1">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Categoria</label>
+        <input name="category" value="{{ form.category }}" placeholder="Filmes ou Series">
+      </div>
+
+      <label class="form-check" style="margin-bottom:1rem;">
+        <input type="checkbox" name="overwrite" {% if form.overwrite %}checked{% endif %}>
+        Atualizar se a URL ja existir
+      </label>
+
+      {% if preview_url %}
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <label style="margin-bottom:.35rem;">URL gerada</label>
+        <code style="display:block;white-space:normal;word-break:break-all;color:#334155;">{{ preview_url }}</code>
+        <div style="margin-top:.75rem;">
+          <a class="btn btn-secondary btn-sm" href="{{ preview_url }}" target="_blank"><i data-feather="external-link"></i> Abrir embed</a>
+        </div>
+      </div>
+      {% endif %}
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <p style="font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.5rem;">Padroes usados</p>
+        <ul style="font-size:.8rem;color:#64748b;padding-left:1.2rem;line-height:1.8;">
+          <li>Dublado filme: <code>https://mgeb.top/embed/{id}</code></li>
+          <li>Dublado serie: <code>https://mgeb.top/embed/{id}/{temporada}/{episodio}</code></li>
+          <li>Legendado filme: <code>https://nhdapi.com/embed/movie/{tmdbId}</code></li>
+          <li>Legendado serie: <code>https://nhdapi.com/embed/tv/{tmdbId}/{temporada}/{episodio}</code></li>
+        </ul>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="submit" name="action" value="preview"><i data-feather="eye"></i> Prever URL</button>
+        <button class="btn btn-primary" type="submit" name="action" value="import"><i data-feather="save"></i> Importar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <div class="card-header">
+    <h5><i data-feather="download-cloud" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>Importar IDs da API JSON</h5>
+  </div>
+  <div class="card-body">
+    <div id="megaembed-job-status" style="display:none;margin-bottom:1rem;"></div>
+
+    <form id="bulk-import-form">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <p style="font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.5rem;">Endpoints usados</p>
+        <ul style="font-size:.8rem;color:#64748b;padding-left:1.2rem;line-height:1.8;">
+          <li>Filmes: <code>https://mgeb.top/api/movie</code></li>
+          <li>Series: <code>https://mgeb.top/api/series</code></li>
+        </ul>
+        <p class="muted" style="margin-top:.75rem;">
+          Para trocar o TMDB ID pelo nome real da midia, configure <code>TMDB_API_KEY</code> ou
+          <code>TMDB_BEARER_TOKEN</code> no ambiente do painel. Series usam o TMDB para importar todos os
+          episodios regulares disponiveis, ignorando especiais.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;">
+        <label class="form-check" style="align-items:flex-start;">
+          <input type="checkbox" name="include_movies" checked>
+          <span>Importar filmes dublados por TMDB ID</span>
+        </label>
+        <label class="form-check" style="align-items:flex-start;">
+          <input type="checkbox" name="include_series" checked>
+          <span>Importar series dubladas por TMDB ID</span>
+        </label>
+      </div>
+
+      <div style="background:#fff8e1;border:1px solid #f1c27d;border-radius:8px;padding:1rem;margin:0 0 1rem 0;">
+        <p style="font-size:.85rem;font-weight:600;color:#8a5a00;margin-bottom:.65rem;">
+          <i data-feather="layers" style="width:14px;height:14px;vertical-align:middle;"></i>
+          Importacao em partes (chunks)
+        </p>
+        <p class="muted" style="font-size:.78rem;margin-bottom:.75rem;">
+          Processe um numero limitado de series por execucao para evitar travamento da pagina
+          e reduzir o risco de banimento por excesso de requisicoes. Ao final, basta usar o botao
+          <strong>Continuar do indice N</strong> para importar o proximo lote.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Series por lote</label>
+            <input type="number" min="0" name="series_limit" id="series-limit" value="25">
+            <small class="muted">0 = todas (nao recomendado).</small>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Comecar a partir do indice</label>
+            <input type="number" min="0" name="series_offset" id="series-offset" value="0">
+            <small class="muted">0 = inicio da lista.</small>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Atraso entre requests (s)</label>
+            <input type="number" min="0" step="0.1" name="request_delay" id="request-delay" value="0.5">
+            <small class="muted">0,3 - 1,0 seguro.</small>
+          </div>
+        </div>
+      </div>
+
+      <label class="form-check" style="margin-bottom:1rem;">
+        <input type="checkbox" name="bulk_overwrite">
+        Atualizar itens existentes encontrados pela mesma URL
+      </label>
+
+      <div class="form-actions" style="gap:.5rem;flex-wrap:wrap;">
+        <button id="bulk-import-btn" class="btn btn-primary" type="submit">
+          <i data-feather="download-cloud"></i> Importar lote da API JSON
+        </button>
+        <button id="bulk-continue-btn" class="btn btn-secondary" type="button" style="display:none;">
+          <i data-feather="skip-forward"></i> Continuar do proximo lote
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const mediaType = document.getElementById('media-type');
+  const audio = document.getElementById('audio');
+  const idType = document.getElementById('id-type');
+  const episodeFields = document.getElementById('episode-fields');
+
+  function syncMegaEmbedForm() {
+    episodeFields.style.display = mediaType.value === 'series' ? 'grid' : 'none';
+    if (audio.value === 'subtitled') {
+      idType.value = 'tmdb';
+      idType.disabled = true;
+    } else {
+      idType.disabled = false;
+    }
+  }
+
+  mediaType.addEventListener('change', syncMegaEmbedForm);
+  audio.addEventListener('change', syncMegaEmbedForm);
+  syncMegaEmbedForm();
+
+  // ── Bulk import via background job ──────────────────────────────────────────
+  const bulkForm     = document.getElementById('bulk-import-form');
+  const bulkBtn      = document.getElementById('bulk-import-btn');
+  const continueBtn  = document.getElementById('bulk-continue-btn');
+  const offsetInput  = document.getElementById('series-offset');
+  const statusEl     = document.getElementById('megaembed-job-status');
+  let pollTimer  = null;
+
+  const STAGE_LABELS = {
+    starting:         'Preparando importacao',
+    fetching_movies:  'Buscando lista de filmes na API',
+    importing_movies: 'Importando filmes',
+    movie_progress:   'Importando filmes',
+    fetching_series:  'Buscando lista de series na API',
+    importing_series: 'Importando series',
+    series_start:     'Processando serie',
+    season_start:     'Processando temporada',
+    series_done:      'Serie concluida',
+    done:             'Finalizando',
+  };
+
+  function refreshIcons() {
+    if (typeof feather !== 'undefined') feather.replace();
+  }
+
+  function showStatus(html, type) {
+    statusEl.innerHTML = `<div class="alert alert-${type}">${html}</div>`;
+    statusEl.style.display = 'block';
+    refreshIcons();
+  }
+
+  function resetBtn() {
+    bulkBtn.disabled = false;
+    bulkBtn.innerHTML = '<i data-feather="download-cloud"></i> Importar lote da API JSON';
+    refreshIcons();
+  }
+
+  function buildProgressHtml(data) {
+    const progress = data.progress || {};
+    const stats    = progress.stats || {};
+    const stage    = STAGE_LABELS[progress.stage] || 'Importando';
+    const idx      = progress.current_index || 0;
+    const total    = progress.total || stats.series_total || stats.movies_total || 0;
+    const pct      = total > 0 ? Math.min(100, Math.round((idx / total) * 100)) : 0;
+
+    let detalhe = '';
+    if (progress.current_title || progress.current_id) {
+      detalhe = `<div style="font-size:.78rem;color:#475569;margin-top:.35rem;">` +
+        `Atual: <strong>${progress.current_title || progress.current_id}</strong>` +
+        (progress.current_season ? ` — Temporada ${progress.current_season}` : '') +
+        `</div>`;
+    }
+
+    const bar = `
+      <div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;margin-top:.5rem;">
+        <div style="width:${pct}%;height:100%;background:#6366f1;transition:width .3s;"></div>
+      </div>`;
+
+    return `
+      <i data-feather="loader"></i> <strong>${stage}</strong>
+      ${total ? ` — ${idx}/${total} (${pct}%)` : ''}
+      ${bar}
+      ${detalhe}
+      <div style="font-size:.75rem;color:#64748b;margin-top:.5rem;">
+        Criados: ${stats.created || 0} • Atualizados: ${stats.updated || 0} •
+        Ignorados: ${stats.skipped || 0} • Episodios: ${stats.episodes_total || 0}
+      </div>`;
+  }
+
+  function buildDoneHtml(s) {
+    const total  = s.series_total_available || 0;
+    const offset = (s.series_offset || 0);
+    const proc   = s.series_processed || 0;
+    const next   = s.next_offset || 0;
+    const hasMore = !!s.has_more;
+
+    const lote = total > 0
+      ? `Lote processado: series ${offset + 1}-${offset + proc} de ${total}.`
+      : '';
+
+    return {
+      hasMore,
+      next,
+      html:
+        `<i data-feather="check-circle"></i> <strong>Lote concluido.</strong> ${lote}` +
+        `<div style="font-size:.78rem;color:#475569;margin-top:.35rem;">` +
+        `Criados <strong>${s.created || 0}</strong>, ` +
+        `atualizados <strong>${s.updated || 0}</strong>, ` +
+        `ignorados <strong>${s.skipped || 0}</strong>. ` +
+        `Temporadas: ${s.seasons_processed || 0}; episodios: ${s.episodes_total || 0}. ` +
+        `Nomes TMDB: ${s.names_resolved || 0} ok, ${s.names_failed || 0} falhas. ` +
+        `Series sem episodios: ${s.series_failed || 0}.` +
+        `</div>` +
+        (hasMore
+          ? `<div style="font-size:.8rem;color:#1e40af;margin-top:.5rem;">` +
+            `Ainda restam <strong>${total - next}</strong> series. ` +
+            `Use o botao <em>Continuar do proximo lote</em> abaixo para importar a partir do indice ${next}.` +
+            `</div>`
+          : `<div style="font-size:.8rem;color:#15803d;margin-top:.5rem;">` +
+            `Todas as series disponiveis foram processadas.</div>`)
+    };
+  }
+
+  function poll(jobId) {
+    fetch(`/admin/megaembed/status/${jobId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'running') {
+          showStatus(buildProgressHtml(data), 'info');
+          pollTimer = setTimeout(() => poll(jobId), 1500);
+        } else if (data.status === 'done') {
+          const result = buildDoneHtml(data.stats || {});
+          showStatus(result.html, 'success');
+          if (result.hasMore) {
+            offsetInput.value = result.next;
+            continueBtn.style.display = 'inline-flex';
+            continueBtn.dataset.next = result.next;
+          } else {
+            continueBtn.style.display = 'none';
+          }
+          resetBtn();
+        } else {
+          showStatus(`<i data-feather="alert-circle"></i> Erro: ${data.error || 'desconhecido'}`, 'error');
+          resetBtn();
+        }
+      })
+      .catch(() => {
+        pollTimer = setTimeout(() => poll(jobId), 3000);
+      });
+  }
+
+  function startJob() {
+    if (pollTimer) clearTimeout(pollTimer);
+    bulkBtn.disabled = true;
+    bulkBtn.innerHTML = '<i data-feather="loader"></i> Iniciando…';
+    continueBtn.style.display = 'none';
+    refreshIcons();
+
+    const formData = new FormData(bulkForm);
+    fetch('/admin/megaembed/run', { method: 'POST', body: formData })
+      .then(r => r.json())
+      .then(data => {
+        if (data.job_id) {
+          showStatus('<i data-feather="loader"></i> Job iniciado. Buscando IDs da API…', 'info');
+          poll(data.job_id);
+        } else {
+          showStatus('Erro ao iniciar o job.', 'error');
+          resetBtn();
+        }
+      })
+      .catch(err => {
+        showStatus(`Erro de rede: ${err}`, 'error');
+        resetBtn();
+      });
+  }
+
+  bulkForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    startJob();
+  });
+
+  continueBtn.addEventListener('click', function() {
+    const next = continueBtn.dataset.next;
+    if (next !== undefined) offsetInput.value = next;
+    startJob();
+  });
+</script>
+{% endblock %}

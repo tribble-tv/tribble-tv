@@ -1,0 +1,502 @@
+{% extends 'client/base.html' %}
+{% set active_client_menu = 'catalog' %}
+
+{% block extra_css %}
+<style>
+  /* PLAYER LAYOUT */
+  .player-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    .player-layout {
+      grid-template-columns: 3fr 1fr;
+    }
+  }
+
+  /* CINEMA PLAYER CONTAINER */
+  .player-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    align-self: flex-start;
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .back-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .player-wrap {
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    aspect-ratio: 16 / 9;
+    width: 100%;
+  }
+
+  .player-wrap video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #000;
+  }
+
+  .player-wrap iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: none;
+    background: #000;
+  }
+
+  /* VIDEO META CARD */
+  .player-meta {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .player-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .player-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  .player-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+
+  .player-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .badge-hls { background: rgba(255, 255, 255, 0.08); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.12); }
+  .badge-jellyfin { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.25); }
+  .badge-youtube { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); }
+  .badge-embed { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
+  .badge-torrent { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.25); }
+  .badge-category { background: rgba(255, 255, 255, 0.08); color: var(--text-main); }
+
+  .torrent-buffering {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.75);
+    color: #fff;
+    font-size: .9rem;
+    gap: .5rem;
+    z-index: 10;
+  }
+  .torrent-buffering.hidden { display: none; }
+
+  .player-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+  }
+
+  .btn-action:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .btn-action-primary {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+  }
+
+  .btn-action-primary:hover {
+    background: #e5e5ea;
+    border-color: #e5e5ea;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  }
+
+  .info-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  /* SUGGESTIONS SIDEBAR */
+  .sidebar-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .suggestions-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sugg-card {
+    background: #151517;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.6rem;
+    transition: var(--transition-smooth);
+  }
+
+  .sugg-card:hover {
+    transform: scale(1.03);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: #1c1c1e;
+  }
+
+  .sugg-thumb-wrap {
+    width: 100px;
+    height: 56px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #000;
+    position: relative;
+  }
+
+  .sugg-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sugg-thumb-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1c1c1e, #000000);
+  }
+
+  .sugg-thumb-fallback svg {
+    width: 18px;
+    height: 18px;
+    color: #ffffff;
+    opacity: 0.5;
+  }
+
+  .sugg-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .sugg-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sugg-category {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="player-layout">
+  <!-- CENTRAL AREA: PLAYER & INFO -->
+  <div class="player-container">
+    <a href="{{ url_for('client.index') }}" class="back-link">
+      <i data-feather="arrow-left"></i> Voltar ao Catálogo
+    </a>
+
+    <!-- PLAYER WRAPPER -->
+    <div class="player-wrap">
+      {% if is_embed %}
+        <iframe name="Player" src="{{ playback_url }}" frameborder="0" scrolling="no" allow="encrypted-media; autoplay" allowfullscreen></iframe>
+      {% elif video.source_type == 'torrent' %}
+        <div class="torrent-buffering" id="torrentBuffering">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <span>Conectando aos peers BitTorrent...</span>
+          <span id="torrentPeers" style="font-size:.75rem;color:#9ca3af;"></span>
+        </div>
+        <video id="player" controls autoplay playsinline></video>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+      {% else %}
+        <video id="player" controls autoplay playsinline></video>
+      {% endif %}
+    </div>
+
+    <!-- METADATA CARD -->
+    <div class="player-meta">
+      <div class="player-meta-top">
+        <h2 class="player-title">{{ video.title }}</h2>
+      </div>
+
+      <div class="player-badges">
+        <!-- PROVIDER BADGE -->
+        {% if video.source_type == 'embed' and video.external_provider == 'youtube' %}
+          <span class="player-badge badge-youtube">YouTube</span>
+        {% elif video.source_type == 'embed' %}
+          <span class="player-badge badge-embed">Embed</span>
+        {% elif video.source_type == 'torrent' %}
+          <span class="player-badge badge-torrent">⬇ BitTorrent</span>
+        {% elif video.is_jellyfin %}
+          <span class="player-badge badge-jellyfin">Jellyfin</span>
+        {% else %}
+          <span class="player-badge badge-hls">HLS Local</span>
+        {% endif %}
+
+        <!-- CATEGORY BADGE -->
+        {% if video.category %}
+          <span class="player-badge badge-category">{{ video.category }}</span>
+        {% endif %}
+        
+        <span class="player-badge badge-category">ID #{{ video.id }}</span>
+      </div>
+
+      <div class="info-desc">
+        {% if video.synopsis %}
+          {{ video.synopsis }}
+        {% elif video.source_type == 'embed' and video.external_provider == 'youtube' %}
+          Este conteúdo está sendo transmitido diretamente da plataforma YouTube.
+        {% elif video.source_type == 'torrent' %}
+          Este conteúdo está sendo transmitido via protocolo BitTorrent usando WebTorrent. O vídeo começa a tocar enquanto o download ainda está em andamento (streaming progressivo).
+        {% elif video.source_type == 'embed' %}
+          Este conteúdo está sendo reproduzido através de um embed externo por meio de iframe.
+        {% elif video.is_jellyfin %}
+          Este filme/série está sendo transmitido em HLS gerado via proxy do servidor Jellyfin conectado ao sistema.
+        {% else %}
+          Este conteúdo está sendo distribuído via rede interna em formato HLS por meio do Porgs Engine.
+        {% endif %}
+      </div>
+
+
+      <div class="player-actions">
+        {% if not is_embed %}
+          <a class="btn-action btn-action-primary" href="{{ url_for('client.play', video_id=video.id) }}" target="_blank">
+            <i data-feather="external-link"></i> Abrir Link Direto
+          </a>
+        {% endif %}
+        
+        {% if video.is_jellyfin %}
+          <a class="btn-action" href="{{ url_for('client.open_jellyfin', video_id=video.id) }}" target="_blank">
+            <i data-feather="monitor"></i> Abrir no Jellyfin
+          </a>
+        {% endif %}
+
+        <span style="margin-left: auto; align-self: center; font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+          <i data-feather="shield" style="width: 14px; height: 14px;"></i>
+          Stream autenticado via token JWT
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: WATCH NEXT / SUGGESTIONS -->
+  <div class="sidebar-suggestions">
+    <h3 class="suggestions-title">
+      <i data-feather="trending-up" style="color: var(--primary); width: 18px; height: 18px;"></i>
+      Assista a seguir
+    </h3>
+
+    <div class="suggestions-list">
+      {% for sugg in suggestions %}
+        <a href="/client/player/{{ sugg.id }}" class="sugg-card">
+          <div class="sugg-thumb-wrap">
+            {% if sugg.thumbnail_url %}
+              <img src="{{ sugg.thumbnail_url }}" class="sugg-thumb" alt="{{ sugg.title }}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="sugg-thumb-fallback" style="display: none;">
+                <i data-feather="play"></i>
+              </div>
+            {% else %}
+              <div class="sugg-thumb-fallback">
+                {% if sugg.source_type == 'embed' and sugg.external_provider == 'youtube' %}
+                  <i data-feather="youtube"></i>
+                {% else %}
+                  <i data-feather="play"></i>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="sugg-info">
+            <h4 class="sugg-title" title="{{ sugg.title }}">{{ sugg.title }}</h4>
+            <span class="sugg-category">{{ sugg.category or 'Vídeo' }}</span>
+          </div>
+        </a>
+      {% else %}
+        <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 2rem 1rem; border: 1px dashed var(--border-color); border-radius: 12px;">
+          Nenhum outro vídeo para sugerir no momento.
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not is_embed %}
+{% if video.source_type != 'torrent' %}
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+{% endif %}
+<script>
+  const src = {{ playback_url|tojson }};
+  const progressUrl = {{ url_for('client.video_progress', video_id=video.id)|tojson }};
+  const videoEl = document.getElementById('player');
+  const isTorrent = {{ (video.source_type == 'torrent')|tojson }};
+  let restoredPosition = false;
+
+  function validSeconds(value) {
+    return Number.isFinite(value) && value > 0;
+  }
+
+  function applySavedPosition(position) {
+    if (restoredPosition || !validSeconds(position) || !validSeconds(videoEl.duration)) return;
+    if (position >= videoEl.duration - 30) return;
+    videoEl.currentTime = Math.max(0, Math.min(position, videoEl.duration - 1));
+    restoredPosition = true;
+  }
+
+  fetch(progressUrl)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !validSeconds(data.position_seconds)) return;
+      videoEl.addEventListener('loadedmetadata', () => applySavedPosition(data.position_seconds), { once: true });
+      if (videoEl.readyState >= 1) applySavedPosition(data.position_seconds);
+    })
+    .catch(() => {});
+
+  function saveProgress(completed = false, keepalive = false) {
+    if (!validSeconds(videoEl.duration)) return;
+    const payload = {
+      position_seconds: videoEl.currentTime || 0,
+      duration_seconds: videoEl.duration,
+      completed: completed || videoEl.ended
+    };
+    fetch(progressUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive
+    }).catch(() => {});
+  }
+
+  if (isTorrent) {
+    // Torrent: serve direto via proxy Flask com range requests
+    videoEl.src = src;
+    const buffering = document.getElementById('torrentBuffering');
+    const peersEl = document.getElementById('torrentPeers');
+
+    videoEl.addEventListener('canplay', () => {
+      if (buffering) buffering.classList.add('hidden');
+    }, { once: true });
+
+    // Poll torrent info para mostrar número de peers
+    const infoUrl = {{ url_for('client.torrent_info', video_id=video.id)|tojson }};
+    function pollPeers() {
+      fetch(infoUrl)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data || !peersEl) return;
+          peersEl.textContent = `${data.numPeers || 0} peers · ${Math.round((data.progress || 0) * 100)}% baixado`;
+          if ((data.numPeers || 0) > 0 && buffering) buffering.classList.add('hidden');
+        })
+        .catch(() => {});
+    }
+    const peerInterval = setInterval(pollPeers, 3000);
+    videoEl.addEventListener('ended', () => clearInterval(peerInterval));
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+    hls.loadSource(src);
+    hls.attachMedia(videoEl);
+  } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+    videoEl.src = src;
+  } else {
+    videoEl.src = src;
+  }
+
+  setInterval(() => {
+    if (!videoEl.paused && !videoEl.ended) saveProgress();
+  }, 15000);
+  videoEl.addEventListener('pause', () => saveProgress());
+  videoEl.addEventListener('ended', () => saveProgress(true));
+  window.addEventListener('pagehide', () => saveProgress(videoEl.ended, true));
+</script>
+{% endif %}
+{% endblock %}

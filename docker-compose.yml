@@ -1,0 +1,186 @@
+services:
+  client:
+    build: .
+    command: flask --app backend.client_app:app run --host=0.0.0.0 --port=5000
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////data/porgs_tv.db}
+      SERVER_SELECTION_STRATEGY: ${SERVER_SELECTION_STRATEGY:-priority_fallback}
+      CLIENT_PUBLIC_URL: ${CLIENT_PUBLIC_URL:-http://localhost:5000}
+      PANEL_PUBLIC_URL: ${PANEL_PUBLIC_URL:-http://localhost:5001}
+      ENGINE_PUBLIC_URL: ${ENGINE_PUBLIC_URL:-}
+      ENGINE_INTERNAL_URL: ${ENGINE_INTERNAL_URL:-http://go-engine:8080}
+      STREAM_PUBLIC_URL: ${STREAM_PUBLIC_URL:-http://localhost:8080}
+      MEDIA_SERVER_SEED_NAMES: ${MEDIA_SERVER_SEED_NAMES:-}
+      MEDIA_SERVER_SEED_TYPES: ${MEDIA_SERVER_SEED_TYPES:-}
+      MEDIA_SERVER_SEED_PUBLIC_URLS: ${MEDIA_SERVER_SEED_PUBLIC_URLS:-}
+      MEDIA_SERVER_SEED_INTERNAL_URLS: ${MEDIA_SERVER_SEED_INTERNAL_URLS:-}
+      MEDIA_SERVER_SEED_API_KEYS: ${MEDIA_SERVER_SEED_API_KEYS:-}
+      MEDIA_SERVER_SEED_PRIORITIES: ${MEDIA_SERVER_SEED_PRIORITIES:-}
+      MEDIA_SEED_NAMES: ${MEDIA_SEED_NAMES:-}
+      MEDIA_SEED_TYPES: ${MEDIA_SEED_TYPES:-}
+      MEDIA_SEED_PUBLIC_URLS: ${MEDIA_SEED_PUBLIC_URLS:-}
+      MEDIA_SEED_INTERNAL_URLS: ${MEDIA_SEED_INTERNAL_URLS:-}
+      MEDIA_SEED_API_KEYS: ${MEDIA_SEED_API_KEYS:-}
+      MEDIA_SEED_PRIORITIES: ${MEDIA_SEED_PRIORITIES:-}
+      JELLYFIN_SEED_URLS: ${JELLYFIN_SEED_URLS:-}
+      JELLYFIN_SEED_USERNAMES: ${JELLYFIN_SEED_USERNAMES:-}
+      JELLYFIN_SEED_PASSWORDS: ${JELLYFIN_SEED_PASSWORDS:-}
+      JELLYFIN_SEED_API_KEYS: ${JELLYFIN_SEED_API_KEYS:-}
+      XTREAM_SEED_USERS: ${XTREAM_SEED_USERS:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_BEARER_TOKEN: ${TMDB_BEARER_TOKEN:-}
+      TMDB_CACHE_PATH: ${TMDB_CACHE_PATH:-/data/tmdb_cache.json}
+      TMDB_CACHE_TTL_SECONDS: ${TMDB_CACHE_TTL_SECONDS:-2592000}
+      KODI_RESOLVER_URL: ${KODI_RESOLVER_URL:-}
+      TORRENT_NODE_URL: ${TORRENT_NODE_URL:-http://torrent-node:9119}
+    ports:
+      - "5000:5000"
+    volumes:
+      - panel-data:/data
+    depends_on:
+      - go-engine
+      - torrent-node
+    networks:
+      default:
+        aliases:
+          - panel
+
+  panel-admin:
+    build: .
+    command: flask --app backend.admin_app:app run --host=0.0.0.0 --port=5001
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////data/porgs_tv.db}
+      SERVER_SELECTION_STRATEGY: ${SERVER_SELECTION_STRATEGY:-priority_fallback}
+      CLIENT_PUBLIC_URL: ${CLIENT_PUBLIC_URL:-http://localhost:5000}
+      PANEL_PUBLIC_URL: ${PANEL_PUBLIC_URL:-http://localhost:5001}
+      ENGINE_PUBLIC_URL: ${ENGINE_PUBLIC_URL:-}
+      ENGINE_INTERNAL_URL: ${ENGINE_INTERNAL_URL:-http://go-engine:8080}
+      STREAM_PUBLIC_URL: ${STREAM_PUBLIC_URL:-http://localhost:8080}
+      MEDIA_SERVER_SEED_NAMES: ${MEDIA_SERVER_SEED_NAMES:-}
+      MEDIA_SERVER_SEED_TYPES: ${MEDIA_SERVER_SEED_TYPES:-}
+      MEDIA_SERVER_SEED_PUBLIC_URLS: ${MEDIA_SERVER_SEED_PUBLIC_URLS:-}
+      MEDIA_SERVER_SEED_INTERNAL_URLS: ${MEDIA_SERVER_SEED_INTERNAL_URLS:-}
+      MEDIA_SERVER_SEED_API_KEYS: ${MEDIA_SERVER_SEED_API_KEYS:-}
+      MEDIA_SERVER_SEED_PRIORITIES: ${MEDIA_SERVER_SEED_PRIORITIES:-}
+      MEDIA_SEED_NAMES: ${MEDIA_SEED_NAMES:-}
+      MEDIA_SEED_TYPES: ${MEDIA_SEED_TYPES:-}
+      MEDIA_SEED_PUBLIC_URLS: ${MEDIA_SEED_PUBLIC_URLS:-}
+      MEDIA_SEED_INTERNAL_URLS: ${MEDIA_SEED_INTERNAL_URLS:-}
+      MEDIA_SEED_API_KEYS: ${MEDIA_SEED_API_KEYS:-}
+      MEDIA_SEED_PRIORITIES: ${MEDIA_SEED_PRIORITIES:-}
+      JELLYFIN_SEED_URLS: ${JELLYFIN_SEED_URLS:-}
+      JELLYFIN_SEED_USERNAMES: ${JELLYFIN_SEED_USERNAMES:-}
+      JELLYFIN_SEED_PASSWORDS: ${JELLYFIN_SEED_PASSWORDS:-}
+      JELLYFIN_SEED_API_KEYS: ${JELLYFIN_SEED_API_KEYS:-}
+      XTREAM_SEED_USERS: ${XTREAM_SEED_USERS:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_BEARER_TOKEN: ${TMDB_BEARER_TOKEN:-}
+      TMDB_CACHE_PATH: ${TMDB_CACHE_PATH:-/data/tmdb_cache.json}
+      TMDB_CACHE_TTL_SECONDS: ${TMDB_CACHE_TTL_SECONDS:-2592000}
+      KODI_RESOLVER_URL: ${KODI_RESOLVER_URL:-}
+      TORRENT_NODE_URL: ${TORRENT_NODE_URL:-http://torrent-node:9119}
+    ports:
+      - "5001:5001"
+    volumes:
+      - panel-data:/data
+
+  torrent-node:
+    build: ./torrent-service
+    environment:
+      TORRENT_PORT: 9119
+      TORRENT_DOWNLOAD_PATH: /tmp/torrents
+      MAX_TORRENTS: ${MAX_TORRENTS:-10}
+    ports:
+      - "9119:9119"
+    volumes:
+      - torrent-cache:/tmp/torrents
+    restart: unless-stopped
+
+  go-engine:
+    build: ./go-engine
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      ENGINE_API_KEY: ${ENGINE_API_KEY:-dev-engine-key}
+      MEDIA_ROOT: /media
+      PANEL_INTERNAL_URL: ${CLIENT_INTERNAL_URL:-http://client:5000}
+      JELLYFIN_ALLOWED_INTERNAL_URLS: ${JELLYFIN_ALLOWED_INTERNAL_URLS:-http://jellyfin:8096}
+      JELLYFIN_API_KEYS: ${JELLYFIN_API_KEYS:-}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-240}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./media:/media:ro
+
+  kodi-headless:
+    image: matthuisman/kodi-headless:Omega-21.3
+    environment:
+      KODI_WEB_PORT: ${KODI_WEB_PORT:-8080}
+    volumes:
+      - kodi-data:/root/.kodi
+      - ./bases_api:/root/.kodi/addons
+    profiles:
+      - kodi
+
+  kodi-resolver:
+    build: ./kodi-resolver
+    environment:
+      KODI_JSONRPC_URL: ${KODI_JSONRPC_URL:-http://kodi-headless:8080/jsonrpc}
+      KODI_RESOLVER_MAX_ITEMS: ${KODI_RESOLVER_MAX_ITEMS:-500}
+    depends_on:
+      - kodi-headless
+    ports:
+      - "8090:8090"
+    volumes:
+      - kodi-data:/kodi-data
+    profiles:
+      - kodi
+
+  ngrok-panel:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: http panel-admin:5001 --name panel-admin --description "Porgs TV panel admin" --metadata "service=panel-admin"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - panel-admin
+    profiles:
+      - ngrok
+
+  ngrok-engine:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: http go-engine:8080 --name go-engine --description "Porgs TV go-engine stream" --metadata "service=go-engine"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    ports:
+      - "4041:4040"
+    depends_on:
+      - go-engine
+    profiles:
+      - ngrok
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    ports:
+      - "8096:8096"
+    volumes:
+      - jellyfin-config:/config
+      - jellyfin-cache:/cache
+      - ./media:/media
+
+volumes:
+  panel-data:
+  jellyfin-config:
+  jellyfin-cache:
+  torrent-cache:
+  kodi-data:
+
+networks:
+  default:
+    name: tribble_tv_net

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% set active_menu = 'videos' %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="video" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Vídeos</h1>
+  <div style="display:flex;gap:.5rem;">
+    <a class="btn btn-primary" href="{{ url_for('admin.videos_embed_create') }}">
+      <i data-feather="code"></i> Novo Embed
+    </a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.videos_torrent_create') }}" style="background:#f0fdf4;color:#166534;border-color:#bbf7d0;">
+      <i data-feather="download-cloud"></i> Novo Torrent
+    </a>
+  </div>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Título</th><th>Tipo</th><th>Provider</th><th>Categoria</th><th>Localizações</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for video in videos %}
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          {% if video.thumbnail_url %}
+          <img src="{{ video.thumbnail_url }}" style="width:48px;height:27px;object-fit:cover;border-radius:4px;flex-shrink:0;" loading="lazy" onerror="this.style.display='none'">
+          {% endif %}
+          <strong>{{ video.title }}</strong>
+        </div>
+      </td>
+      <td>
+        {% if video.source_type == 'embed' and video.external_provider == 'megaembed' %}
+          <span class="badge" style="background:#ede9fe;color:#5b21b6;">megaembed</span>
+        {% elif video.source_type == 'embed' and video.external_provider == 'youtube' %}
+          <span class="badge" style="background:#fee2e2;color:#dc2626;">youtube</span>
+        {% elif video.source_type == 'embed' and video.external_provider == 'kodi_m3u' %}
+          <span class="badge badge-info">kodi m3u</span>
+        {% elif video.source_type == 'embed' and video.external_provider == 'kodi_addon' %}
+          <span class="badge badge-info">kodi add-on</span>
+        {% elif video.source_type == 'torrent' %}
+          <span class="badge" style="background:#f0fdf4;color:#166534;">torrent</span>
+        {% elif video.source_type == 'embed' %}
+          <span class="badge badge-warning">embed</span>
+        {% elif video.source_type == 'jellyfin' or video.external_provider == 'jellyfin' %}
+          <span class="badge badge-info">jellyfin</span>
+        {% else %}
+          <span class="badge badge-muted">{{ video.source_type }}</span>
+        {% endif %}
+      </td>
+      <td><span class="muted">{{ video.external_provider or '—' }}</span></td>
+      <td>
+        {% if video.category %}
+          <span class="badge badge-muted">{{ video.category }}</span>
+        {% else %}
+          <span class="muted">—</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if video.source_type != 'embed' %}
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.video_locations_index', id=video.id) }}">
+          <i data-feather="map-pin"></i> Localizações
+        </a>
+        {% else %}
+        <span class="muted" style="font-size:.78rem;">iframe externo</span>
+        {% endif %}
+      </td>
+      <td class="actions">
+        <a class="btn btn-primary btn-sm" href="{{ config.CLIENT_PUBLIC_URL }}/client/player/{{ video.id }}" target="_blank">
+          <i data-feather="play"></i> Play
+        </a>
+        {% if video.source_type == 'embed' %}
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.videos_embed_edit', id=video.id) }}">
+          <i data-feather="edit-2"></i> Editar
+        </a>
+        <form method="post" action="{{ url_for('admin.videos_embed_delete', id=video.id) }}" style="display:inline;" onsubmit="return confirm('Remover este embed?')">
+          <button class="btn btn-danger btn-sm" type="submit"><i data-feather="trash-2"></i> Remover</button>
+        </form>
+        {% elif video.source_type == 'torrent' %}
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.videos_torrent_edit', id=video.id) }}">
+          <i data-feather="edit-2"></i> Editar
+        </a>
+        <form method="post" action="{{ url_for('admin.videos_torrent_delete', id=video.id) }}" style="display:inline;" onsubmit="return confirm('Remover este torrent?')">
+          <button class="btn btn-danger btn-sm" type="submit"><i data-feather="trash-2"></i> Remover</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not videos %}
+    <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum vídeo cadastrado. Sincronize itens Jellyfin, importe do YouTube ou crie um embed.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

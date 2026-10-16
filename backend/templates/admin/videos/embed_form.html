@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% set active_menu = 'videos' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Vídeos</a> / {{ 'Editar' if video else 'Novo' }} Embed</div>
+    <h1>{{ 'Editar' if video else 'Novo' }} vídeo embed</h1>
+  </div>
+</div>
+<div class="card" style="max-width:640px;">
+  <div class="card-header">
+    <h5><i data-feather="code" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>
+      Embed externo (iframe)
+    </h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      <div class="form-group">
+        <label>Título do vídeo / canal</label>
+        <input name="title" value="{{ video.title if video else '' }}" placeholder="Ex: Casa do Patrão 1" required>
+      </div>
+      <div class="form-group">
+        <label>URL do embed (src do iframe)</label>
+        <input name="embed_url" value="{{ video.source_url if video else '' }}" placeholder="//redecanaistv.ph/player3/ch.php?canal=casadopatrao1" required>
+        <p class="muted" style="margin-top:.35rem;">
+          Cole a URL que vai no atributo <code>src</code> do <code>&lt;iframe&gt;</code>.<br>
+          Exemplo redecanais: <code>//redecanaistv.ph/player3/ch.php?canal=<strong>ID_DO_CANAL</strong></code>
+        </p>
+      </div>
+      <div class="form-group">
+        <label>Categoria (opcional)</label>
+        <select name="category">
+          <option value="">— Sem categoria —</option>
+          {% set categories = ['Terror','Ação','Comédia','Drama','Romance','Suspense','Faroeste','Ficção Científica','Documentário','Infantil','Aventura','Animação','Filmes'] %}
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if video and video.category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <p style="font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.5rem;">Como obter a URL do embed (redecanais.ph):</p>
+        <ol style="font-size:.8rem;color:#64748b;padding-left:1.2rem;line-height:1.8;">
+          <li>Acesse <strong>redecanais.ph</strong> e abra o canal ou filme desejado</li>
+          <li>Clique com botão direito no player &rarr; <em>Inspecionar</em> ou veja o código-fonte</li>
+          <li>Procure a tag <code>&lt;iframe src="..."&gt;</code> — copie apenas o valor do <code>src</code></li>
+          <li>Alternativamente, acesse a URL <code>embed.api?embed=BASE64</code> e decodifique o base64</li>
+          <li>O padrão é: <code>//redecanaistv.ph/player3/ch.php?canal=NOME_CANAL</code></li>
+        </ol>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin.videos_index') }}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

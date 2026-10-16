@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% set active_menu = 'jellyfin_servers' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.jellyfin_servers_index') }}">Servidores Jellyfin</a> / {{ 'Editar' if server.id else 'Novo' }}</div>
+    <h1>{{ 'Editar' if server.id else 'Novo' }} servidor Jellyfin</h1>
+  </div>
+</div>
+<div class="card" style="max-width:640px;">
+  <div class="card-header"><h5><i data-feather="cloud" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>Configurações</h5></div>
+  <div class="card-body">
+    <form method="post">
+      <div class="form-group"><label>Nome</label><input name="name" value="{{ server.name or '' }}" required placeholder="Jellyfin principal"></div>
+      <div class="form-group"><label>URL pública</label><input name="base_url" value="{{ server.base_url or '' }}" required placeholder="http://192.168.x.x:8096"></div>
+      <div class="form-group"><label>URL interna <span class="muted">(opcional)</span></label><input name="internal_url" value="{{ server.internal_url or '' }}" placeholder="http://jellyfin:8096"></div>
+      <div class="form-group">
+        <label>API key {% if server.id %}<span class="muted">(deixe em branco para manter)</span>{% endif %}</label>
+        <input name="api_key" value="" {% if not server.id %}required{% endif %} placeholder="{{ '••••••••' if server.id else 'Cole sua API key aqui' }}">
+        <p class="muted" style="margin-top:.25rem;">Enviada via header X-Emby-Token — não fica visível nas listagens.</p>
+      </div>
+      <div class="form-group"><label>Usuário admin <span class="muted">(opcional)</span></label><input name="admin_username" value="{{ server.admin_username or '' }}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group"><label>Prioridade</label><input type="number" name="priority" value="{{ server.priority or 100 }}"></div>
+        <div class="form-group"><label>Peso</label><input type="number" name="weight" value="{{ server.weight or 1 }}"></div>
+      </div>
+      <div class="form-group form-check"><input type="checkbox" name="is_active" id="is_active" {% if server.is_active %}checked{% endif %}><label for="is_active" style="margin:0;">Ativo</label></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin.jellyfin_servers_index') }}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

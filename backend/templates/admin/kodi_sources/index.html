@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% set active_menu = 'kodi_sources' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Videos</a> / Kodi Sources</div>
+    <h1><i data-feather="box" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Kodi Sources</h1>
+  </div>
+  <a class="btn btn-secondary" href="{{ url_for('admin.videos_index') }}"><i data-feather="arrow-left"></i> Voltar</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5><i data-feather="plus-circle" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>Nova fonte Kodi</h5>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.kodi_sources_create') }}">
+      <div style="display:grid;grid-template-columns:minmax(150px,1fr) minmax(150px,.8fr) minmax(260px,2fr) minmax(140px,1fr);gap:1rem;align-items:end;">
+        <div class="form-group" style="margin:0;">
+          <label>Nome</label>
+          <input type="text" name="name" placeholder="Ex: Add-on esportes" required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Tipo</label>
+          <select name="source_kind">
+            <option value="addon">Repo/add-on</option>
+            <option value="m3u">M3U/HLS</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>URL da fonte</label>
+          <input type="url" name="source_url" placeholder="https://exemplo.com/repository.zip" required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Categoria padrao</label>
+          <input type="text" name="default_category" placeholder="Kodi">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1fr) minmax(140px,.6fr) auto;gap:1rem;align-items:end;margin-top:1rem;">
+        <div class="form-group" style="margin:0;">
+          <label>Add-on ID</label>
+          <input type="text" name="addon_id" placeholder="plugin.video.exemplo">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Caminho inicial</label>
+          <input type="text" name="entry_path" placeholder="plugin://plugin.video.exemplo/">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Sync min</label>
+          <input type="number" min="0" name="sync_interval_minutes" placeholder="0">
+        </div>
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Fonte</th>
+        <th>URL</th>
+        <th>Status</th>
+        <th>Ultima sync</th>
+        <th>Resultado</th>
+        <th>Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for source in sources %}
+      <tr>
+        <td>
+          <strong>{{ source.name }}</strong>
+          <div class="muted">{{ 'Repo/add-on' if source.source_kind == 'addon' else 'M3U/HLS' }}</div>
+          {% if source.default_category %}
+            <div class="muted">Categoria: {{ source.default_category }}</div>
+          {% endif %}
+          {% if source.addon_id %}
+            <div class="muted">Add-on: {{ source.addon_id }}</div>
+          {% endif %}
+        </td>
+        <td><code style="font-size:.75rem;word-break:break-all;color:#64748b;">{{ source.effective_source_url }}</code></td>
+        <td>
+          {% if source.is_active %}
+            <span class="badge badge-success">Ativa</span>
+          {% else %}
+            <span class="badge badge-muted">Inativa</span>
+          {% endif %}
+          {% if source.last_status == 'success' %}
+            <span class="badge badge-info">sync ok</span>
+          {% elif source.last_status == 'error' %}
+            <span class="badge badge-danger">erro</span>
+          {% elif source.last_status == 'needs_config' %}
+            <span class="badge badge-muted">config</span>
+          {% endif %}
+        </td>
+        <td><span class="muted">{{ source.last_synced_at.strftime('%d/%m/%Y %H:%M') if source.last_synced_at else '---' }}</span></td>
+        <td>
+          {% if source.last_status == 'error' and source.last_error %}
+            <span class="text-danger" style="font-size:.78rem;">{{ source.last_error }}</span>
+          {% elif source.last_status == 'needs_config' and source.last_error %}
+            <span class="muted" style="font-size:.78rem;">{{ source.last_error }}</span>
+          {% elif source.last_stats %}
+            <span class="muted">
+              {{ source.last_stats.created }} criados,
+              {{ source.last_stats.updated }} atualizados,
+              {{ source.last_stats.skipped }} ignorados,
+              {{ source.last_stats.invalid }} invalidos
+            </span>
+          {% else %}
+            <span class="muted">---</span>
+          {% endif %}
+        </td>
+        <td class="actions">
+          <form method="post" action="{{ url_for('admin.kodi_sources_sync', id=source.id) }}" style="display:inline;">
+            <label class="form-check" style="display:inline-flex;margin-right:.4rem;">
+              <input type="checkbox" name="overwrite">
+              <span class="muted">overwrite</span>
+            </label>
+            <label class="form-check" style="display:inline-flex;margin-right:.4rem;">
+              <input type="checkbox" name="validate_hls">
+              <span class="muted">validar HLS</span>
+            </label>
+            {% if source.source_kind == 'addon' %}
+              <input type="hidden" name="max_depth" value="4">
+            {% endif %}
+            <button class="btn btn-primary btn-sm" type="submit"><i data-feather="refresh-cw"></i> Sync</button>
+          </form>
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.kodi_sources_edit', id=source.id) }}">
+            <i data-feather="edit-2"></i> Editar
+          </a>
+          <form method="post" action="{{ url_for('admin.kodi_sources_toggle', id=source.id) }}" style="display:inline;">
+            <button class="btn btn-sm {{ 'btn-danger' if source.is_active else 'btn-success' }}" type="submit">
+              <i data-feather="{{ 'pause' if source.is_active else 'play' }}"></i>
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('admin.kodi_sources_delete', id=source.id) }}" style="display:inline;" onsubmit="return confirm('Remover fonte {{ source.name }}?')">
+            <button class="btn btn-danger btn-sm" type="submit"><i data-feather="trash-2"></i></button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    {% if not sources %}
+      <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma fonte Kodi cadastrada.</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

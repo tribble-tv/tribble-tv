@@ -1,0 +1,306 @@
+{% extends 'client/base.html' %}
+{% set active_client_menu = 'catalog' %}
+{% block title %}Série | Porgs TV{% endblock %}
+
+{% block extra_css %}
+<style>
+  .series-hero {
+    display: flex; gap: 2.5rem; align-items: center;
+    background: transparent; border: none;
+    padding: 0; margin-bottom: 3.5rem;
+  }
+
+  .series-poster {
+    width: 200px; flex-shrink: 0; border-radius: 12px; overflow: hidden;
+    aspect-ratio: 2/3; background: #1c1c1e;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .series-poster img { width: 100%; height: 100%; object-fit: cover; }
+
+  .series-poster-fallback {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1c1c1e, #000000);
+    color: #ffffff; font-size: 3rem;
+  }
+
+  .series-info { flex: 1; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    color: var(--text-muted); font-size: .85rem; margin-bottom: 2rem;
+    padding: .5rem 1rem; border-radius: 99px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+    transition: var(--transition-smooth);
+    font-weight: 600;
+  }
+
+  .back-btn:hover { color: #fff; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.15); }
+  .back-btn svg { width: 14px; height: 14px; }
+
+  .series-title {
+    font-size: 3rem; font-weight: 800; margin-bottom: 1rem;
+    color: #ffffff;
+    letter-spacing: -0.03em;
+  }
+
+  .series-meta {
+    display: flex; gap: 0.75rem; align-items: center; margin-top: 1rem; flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    background: rgba(255, 255, 255, 0.08); color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: .4rem .9rem; border-radius: 99px; font-size: .8rem; font-weight: 600;
+  }
+
+  /* SEASONS */
+  .seasons-container { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .season-block {
+    background: #151517; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; overflow: hidden;
+  }
+
+  .season-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.75rem; cursor: pointer;
+    transition: background .2s;
+    user-select: none;
+  }
+
+  .season-header:hover { background: rgba(255,255,255,.03); }
+
+  .season-header-left {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .season-number {
+    background: #ffffff; color: #000000;
+    padding: .3rem .75rem; border-radius: 8px;
+    font-size: .85rem; font-weight: 700;
+  }
+
+  .season-label { font-size: 1.1rem; font-weight: 600; }
+  .season-ep-count { font-size: .85rem; color: var(--text-muted); }
+
+  .season-chevron {
+    width: 20px; height: 20px; color: var(--text-muted);
+    transition: transform .3s ease;
+  }
+
+  .season-block.open .season-chevron { transform: rotate(180deg); }
+
+  .episodes-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.25rem; padding: 1.25rem 1.75rem 1.75rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .season-block.open .episodes-grid { display: grid; }
+
+  /* EPISODE CARD */
+  .ep-card {
+    background: #1c1c1e; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+    transition: var(--transition-smooth);
+  }
+
+  .ep-card:hover {
+    transform: scale(1.03); border-color: rgba(255,255,255,.2);
+    box-shadow: 0 10px 25px rgba(0,0,0,.6);
+  }
+
+  .ep-thumb {
+    position: relative; padding-top: 56.25%; background: #000; overflow: hidden;
+  }
+
+  .ep-thumb img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    transition: transform .3s ease;
+  }
+
+  .ep-card:hover .ep-thumb img { transform: scale(1.04); }
+
+  .ep-thumb-fallback {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; background: linear-gradient(135deg, #1c1c1e, #000000);
+    color: #ffffff;
+  }
+
+  .ep-thumb-fallback svg { width: 28px; height: 28px; opacity: 0.5; }
+
+  .ep-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.4);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .2s;
+  }
+
+  .ep-card:hover .ep-overlay { opacity: 1; }
+
+  .ep-play {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #ffffff; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+
+  .ep-play svg { width: 16px; height: 16px; fill: #000; margin-left: 2px; }
+
+  .ep-info { padding: 1rem; flex: 1; }
+
+  .ep-number {
+    font-size: .75rem; font-weight: 700; color: var(--text-muted); margin-bottom: .25rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  .ep-title {
+    font-size: .85rem; font-weight: 600; color: #ffffff; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* SKELETON */
+  .skeleton { background: rgba(255,255,255,.06); border-radius: 12px; animation: pulse 1.4s ease infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* LOADING OVERLAY */
+  .page-loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 5rem; font-size: 1rem; color: var(--text-muted); gap: 1rem;
+  }
+
+  .spin {
+    width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.1);
+    border-top-color: #ffffff; border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .series-hero { flex-direction: column; text-align: center; }
+    .series-poster { width: 140px; }
+    .series-title { font-size: 2rem; }
+    .episodes-grid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="/client/" class="back-btn">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+  Voltar ao Catálogo
+</a>
+
+<div id="series-page">
+  <div class="page-loading">
+    <div class="spin"></div> Carregando série…
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const slug = {{ series_slug | tojson }};
+  const root = document.getElementById('series-page');
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function progressHtml(ep) {
+    const pct = Math.max(0, Math.min(100, Number(ep.progress_percent || 0)));
+    if (!pct && !ep.completed) return '';
+    const label = ep.completed ? 'Concluido' : `${Math.round(pct)}% assistido`;
+    return `<div style="margin-top:.5rem;">
+      <div style="height:4px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden;">
+        <div style="height:100%;width:${ep.completed ? 100 : pct}%;background:var(--primary);"></div>
+      </div>
+      <div style="margin-top:.25rem;color:var(--text-muted);font-size:.72rem;">${label}</div>
+    </div>`;
+  }
+
+  function epCard(ep) {
+    const thumb = ep.thumbnail_url
+      ? `<img src="${esc(ep.thumbnail_url)}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+         <div class="ep-thumb-fallback" style="display:none;">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+         </div>`
+      : `<div class="ep-thumb-fallback">
+           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+         </div>`;
+
+    return `<a href="/client/player/${ep.id}" class="ep-card">
+      <div class="ep-thumb">
+        ${thumb}
+        <div class="ep-overlay">
+          <div class="ep-play">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="ep-info">
+        <div class="ep-number">Ep. ${ep.episode}</div>
+        <div class="ep-title">${esc(ep.title)}</div>
+        ${progressHtml(ep)}
+      </div>
+    </a>`;
+  }
+
+  function seasonBlock(seasonNum, episodes) {
+    const epHtml = episodes.map(epCard).join('');
+    return `
+      <div class="season-block open">
+        <div class="season-header" onclick="this.closest('.season-block').classList.toggle('open')">
+          <div class="season-header-left">
+            <span class="season-number">T${String(seasonNum).padStart(2,'0')}</span>
+            <span class="season-label">Temporada ${seasonNum}</span>
+            <span class="season-ep-count">${episodes.length} episódio${episodes.length !== 1 ? 's' : ''}</span>
+          </div>
+          <svg class="season-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="episodes-grid">${epHtml}</div>
+      </div>`;
+  }
+
+  fetch(`/client/series/${slug}/episodes`)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => {
+      const poster = data.thumbnail_url
+        ? `<img src="${esc(data.thumbnail_url)}" alt="${esc(data.title)}">`
+        : `<div class="series-poster-fallback">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+           </div>`;
+
+      const seasonNums = Object.keys(data.seasons).map(Number).sort((a,b)=>a-b);
+      const totalEps   = seasonNums.reduce((s, n) => s + data.seasons[n].length, 0);
+
+      const seasonsHtml = seasonNums.map(n => seasonBlock(n, data.seasons[n])).join('');
+
+      root.innerHTML = `
+        <div class="series-hero">
+          <div class="series-poster">${poster}</div>
+          <div class="series-info">
+            <h1 class="series-title">${esc(data.title)}</h1>
+            ${data.synopsis ? `<p style="color:var(--text-muted);font-size:1rem;line-height:1.65;max-width:600px;margin:0.75rem 0 1.25rem;">${esc(data.synopsis)}</p>` : ''}
+            <div class="series-meta">
+              <span class="meta-pill">${seasonNums.length} temporada${seasonNums.length !== 1 ? 's' : ''}</span>
+              <span class="meta-pill">${totalEps} episódios</span>
+              <span class="meta-pill" style="background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.2);">Série</span>
+            </div>
+          </div>
+        </div>
+        <div class="seasons-container">${seasonsHtml}</div>`;
+
+    })
+    .catch(() => {
+      root.innerHTML = `<div class="page-loading">Série não encontrada.</div>`;
+    });
+})();
+</script>
+{% endblock %}

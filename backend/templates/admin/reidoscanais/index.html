@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% set active_menu = 'reidoscanais' %}
+{% block extra_css %}
+<style>
+  .api-panel { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.07); padding:1.25rem; margin-bottom:1.25rem; }
+  .api-panel h3 { font-size:.95rem; font-weight:700; color:#1e293b; margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+  .filter-row { display:grid; grid-template-columns:160px minmax(160px,220px) minmax(140px,180px) 1fr auto; gap:.75rem; align-items:end; }
+  .results-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1rem; }
+  .result-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:.75rem; display:flex; flex-direction:column; gap:.5rem; min-height:100%; }
+  .result-card.disabled { opacity:.62; }
+  .result-thumb { width:100%; height:120px; object-fit:cover; border-radius:7px; background:#e2e8f0; }
+  .result-placeholder { width:100%; height:120px; border-radius:7px; background:#e2e8f0; color:#94a3b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; }
+  .result-title { display:flex; gap:.45rem; align-items:flex-start; color:#1e293b; font-weight:700; font-size:.86rem; line-height:1.3; }
+  .result-title input { margin-top:.15rem; flex-shrink:0; width:16px; height:16px; accent-color:#6366f1; }
+  .meta-line { display:flex; flex-wrap:wrap; gap:.35rem; }
+  .result-url { font-size:.68rem; color:#94a3b8; word-break:break-all; }
+  .result-description { color:#64748b; font-size:.75rem; line-height:1.35; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+  .count-badge { background:#ede9fe; color:#6366f1; border-radius:6px; padding:.2rem .6rem; font-size:.78rem; font-weight:600; }
+  #api-log { font-family:monospace; font-size:.78rem; background:#0f172a; color:#cbd5e1; border-radius:8px; padding:.85rem; min-height:44px; white-space:pre-wrap; }
+  @media (max-width: 920px) { .filter-row { grid-template-columns:1fr 1fr; } }
+  @media (max-width: 560px) { .filter-row { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb">IntegraÃ§Ãµes / ReidosCanais API</div>
+    <h1><i data-feather="radio" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>ReidosCanais API</h1>
+  </div>
+</div>
+
+<div class="api-panel">
+  <h3><i data-feather="sliders" style="width:16px;height:16px;"></i> Consulta</h3>
+  <div class="filter-row">
+    <div class="form-group" style="margin:0;">
+      <label>Fonte</label>
+      <select id="source" onchange="syncFilters()">
+        <option value="channels">Canais</option>
+        <option value="sports">Eventos esportivos</option>
+        <option value="search">Busca global</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Categoria</label>
+      <select id="category"></select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Status</label>
+      <select id="status">
+        <option value="">Ao vivo + prÃ³ximos</option>
+        <option value="live">Ao vivo</option>
+        <option value="upcoming">PrÃ³ximos</option>
+        <option value="finished">Finalizados</option>
+        <option value="all">Todos</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label>Busca</label>
+      <input id="query" placeholder="globo, flamengo, sportv">
+    </div>
+    <button class="btn btn-primary" id="btn-fetch" type="button" onclick="fetchItems()">
+      <i data-feather="search"></i> Buscar
+    </button>
+  </div>
+</div>
+
+<div class="api-panel">
+  <div class="toolbar" style="justify-content:space-between;margin-bottom:1rem;">
+    <h3 style="margin:0;"><i data-feather="list" style="width:16px;height:16px;"></i> Resultados <span class="count-badge" id="result-count">0</span></h3>
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-sm" type="button" onclick="selectAll(true)"><i data-feather="check-square"></i> Selecionar</button>
+      <button class="btn btn-secondary btn-sm" type="button" onclick="selectAll(false)"><i data-feather="square"></i> Limpar</button>
+    </div>
+  </div>
+  <div id="api-log">Escolha os filtros e busque itens da API.</div>
+  <div class="results-grid" id="results-grid" style="margin-top:1rem;"></div>
+</div>
+
+<div class="api-panel" id="import-panel" style="display:none;">
+  <h3><i data-feather="download" style="width:16px;height:16px;"></i> Importar selecionados</h3>
+  <div class="result-description" style="margin-bottom:.75rem;">
+    A importacao tenta converter cada embed em stream direto .m3u8. Itens sem stream direto valido sao ignorados.
+  </div>
+  <form id="import-form" method="post" action="{{ url_for('admin.reidoscanais_import') }}">
+    <input type="hidden" name="items_json" id="items-json">
+    <div class="toolbar">
+      <div class="form-check">
+        <input type="checkbox" name="overwrite" id="overwrite">
+        <label for="overwrite" style="margin:0;">Atualizar tÃ­tulos jÃ¡ existentes</label>
+      </div>
+      <button class="btn btn-primary" type="button" onclick="submitImport()">
+        <i data-feather="save"></i> Importar <span id="selected-count">0</span> itens
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="api-panel">
+  <h3><i data-feather="refresh-cw" style="width:16px;height:16px;"></i> Converter embeds existentes</h3>
+  <div class="toolbar" style="justify-content:space-between;">
+    <div class="result-description">
+      Atualiza itens ReidosCanais ja importados, trocando a embed_url por stream direto .m3u8 quando a origem permitir.
+    </div>
+    <form method="post" action="{{ url_for('admin.reidoscanais_convert') }}">
+      <button class="btn btn-secondary" type="submit">
+        <i data-feather="repeat"></i> Converter existentes
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+const channelCategories = {{ channel_categories|tojson }};
+const sportsCategories = {{ sports_categories|tojson }};
+let currentItems = [];
+
+function syncFilters() {
+  const source = document.getElementById('source').value;
+  const category = document.getElementById('category');
+  const status = document.getElementById('status');
+  const query = document.getElementById('query');
+  const categories = source === 'sports' ? sportsCategories : channelCategories;
+
+  category.innerHTML = '<option value="">Todas</option>' + categories.map(c => (
+    `<option value="${escAttr(c.name || c.id || '')}">${escHtml(c.name || c.id || '')}</option>`
+  )).join('');
+  category.disabled = source === 'search';
+  status.disabled = source !== 'sports';
+  query.disabled = source !== 'search';
+}
+
+function fetchItems() {
+  const btn = document.getElementById('btn-fetch');
+  btn.disabled = true;
+  setLog('Consultando API ReidosCanais...');
+  const body = new URLSearchParams({
+    source: document.getElementById('source').value,
+    category: document.getElementById('category').value,
+    status: document.getElementById('status').value,
+    query: document.getElementById('query').value
+  });
+
+  fetch('{{ url_for("admin.reidoscanais_fetch") }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body
+  })
+  .then(r => r.json().then(data => ({ok: r.ok, data})))
+  .then(({ok, data}) => {
+    if (!ok) throw new Error(data.error || 'Erro ao consultar API.');
+    currentItems = data.items || [];
+    renderResults(currentItems);
+    setLog(`${currentItems.length} itens encontrados.`);
+  })
+  .catch(e => setLog('Erro: ' + e.message))
+  .finally(() => { btn.disabled = false; });
+}
+
+function renderResults(items) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  document.getElementById('result-count').textContent = items.length;
+  document.getElementById('import-panel').style.display = items.length ? 'block' : 'none';
+
+  items.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card' + (item.importable ? '' : ' disabled');
+    const thumb = item.thumb_url
+      ? `<img class="result-thumb" src="${escAttr(item.thumb_url)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex';"><div class="result-placeholder" style="display:none;">Sem imagem</div>`
+      : `<div class="result-placeholder">Sem imagem</div>`;
+    const checked = item.selected ? 'checked' : '';
+    const disabled = item.importable ? '' : 'disabled';
+    card.innerHTML = `
+      ${thumb}
+      <label class="result-title">
+        <input type="checkbox" class="item-cb" data-idx="${i}" ${checked} ${disabled} onchange="updateSelectedCount()">
+        <span>${escHtml(item.title)}</span>
+      </label>
+      <div class="meta-line">
+        <span class="badge badge-info">${escHtml(item.kind === 'sport' ? 'esporte' : 'canal')}</span>
+        ${item.category ? `<span class="badge badge-muted">${escHtml(item.category)}</span>` : ''}
+        ${item.status ? `<span class="badge badge-warning">${escHtml(item.status)}</span>` : ''}
+      </div>
+      ${item.provider || item.quality ? `<div class="result-description">${escHtml([item.provider, item.quality].filter(Boolean).join(' - '))}</div>` : ''}
+      ${item.description ? `<div class="result-description">${escHtml(item.description)}</div>` : ''}
+      <div class="result-url">${escHtml(item.embed_url || 'Sem embed_url')}</div>
+    `;
+    grid.appendChild(card);
+  });
+  updateSelectedCount();
+  feather.replace();
+}
+
+function selectAll(checked) {
+  document.querySelectorAll('.item-cb:not(:disabled)').forEach(cb => cb.checked = checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.item-cb:checked').length;
+  document.getElementById('selected-count').textContent = count;
+}
+
+function submitImport() {
+  const selected = [...document.querySelectorAll('.item-cb:checked')].map(cb => currentItems[Number(cb.dataset.idx)]);
+  if (!selected.length) {
+    alert('Nenhum item selecionado.');
+    return;
+  }
+  document.getElementById('items-json').value = JSON.stringify(selected);
+  document.getElementById('import-form').submit();
+}
+
+function setLog(text) {
+  document.getElementById('api-log').textContent = text;
+}
+
+function escHtml(value) {
+  return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(value) {
+  return escHtml(value).replace(/'/g,'&#39;');
+}
+
+syncFilters();
+</script>
+{% endblock %}

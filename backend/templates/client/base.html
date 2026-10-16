@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Porgs TV{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #000000;
+      --bg-surface: #151517;
+      --bg-surface-hover: #242426;
+      --text-main: #ffffff;
+      --text-muted: #8e8e93;
+      --primary: #ffffff;
+      --primary-hover: #e5e5ea;
+      --primary-glow: rgba(255, 255, 255, 0.1);
+      --accent: #30d158;
+      --danger: #ff453a;
+      --warning: #ff9f0a;
+      --card-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --transition-smooth: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.9rem;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      transition: var(--transition-smooth);
+    }
+
+    /* HEADER */
+    .header-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: var(--transition-smooth);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000000;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .brand-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.4rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: #ffffff;
+      background: transparent;
+    }
+
+    .nav-link.active {
+      border-bottom-color: #ffffff;
+      color: #ffffff;
+    }
+
+    /* MAIN CONTAINER */
+    .container {
+      flex: 1;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    /* ALERTS / FLASH MESSAGES */
+    .alert-container {
+      margin-bottom: 1.5rem;
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border: 1px solid transparent;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .alert-success {
+      background: rgba(48, 209, 88, 0.1);
+      color: #30d158;
+      border-color: rgba(48, 209, 88, 0.2);
+    }
+
+    .alert-error, .alert-danger {
+      background: rgba(255, 69, 58, 0.1);
+      color: #ff453a;
+      border-color: rgba(255, 69, 58, 0.2);
+    }
+
+    .alert-info {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .alert svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* FOOTER */
+    footer {
+      background: #000000;
+      border-top: 1px solid var(--border-color);
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: auto;
+    }
+
+    footer p {
+      margin-bottom: 0.5rem;
+    }
+
+    footer a {
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #242426;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3a3a3c;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .header-nav {
+        padding: 1.5rem;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .nav-links {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .container {
+        padding: 1.5rem 1rem;
+      }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- HEADER -->
+  <nav class="header-nav">
+    <a href="{{ url_for('client.index') }}" class="brand">
+      <div class="brand-icon">
+        <i data-feather="tv"></i>
+      </div>
+      Porgs TV
+    </a>
+
+    <div class="nav-links">
+      <a href="{{ url_for('client.index') }}" class="nav-link {% if active_client_menu == 'catalog' %}active{% endif %}">
+        <i data-feather="grid"></i> Catálogo
+      </a>
+      {% if current_client_user %}
+        <a href="/playlist.m3u" target="_blank" class="nav-link">
+          <i data-feather="list"></i> Playlist M3U
+        </a>
+        <a href="{{ url_for('client.logout') }}" class="nav-link">
+          <i data-feather="log-out"></i> Sair
+        </a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alert-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+              {% if category == 'success' %}
+                <i data-feather="check-circle"></i>
+              {% elif category == 'error' or category == 'danger' %}
+                <i data-feather="alert-circle"></i>
+              {% else %}
+                <i data-feather="info"></i>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&copy; 2026 Porgs TV. Todos os direitos reservados.</p>
+    <p>Alimentado por <a href="https://github.com" target="_blank">Porgs Engine</a> e <a href="https://jellyfin.org" target="_blank">Jellyfin</a>.</p>
+  </footer>
+
+  <script>
+    feather.replace();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

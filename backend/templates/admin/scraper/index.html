@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% set active_menu = 'scraper' %}
+{% block extra_css %}
+<style>
+  .scraper-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.07); padding:1.5rem; margin-bottom:1.5rem; }
+  .scraper-card h3 { font-size:.95rem; font-weight:700; color:#1e293b; margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+  .progress-wrap { background:#f1f5f9; border-radius:8px; height:10px; overflow:hidden; margin:.75rem 0; }
+  .progress-bar { height:100%; background:linear-gradient(90deg,#6366f1,#8b5cf6); border-radius:8px; transition:width .4s ease; width:0%; }
+  .results-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1rem; }
+  .result-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:.75rem; display:flex; flex-direction:column; gap:.4rem; }
+  .result-card input[type=checkbox] { width:16px; height:16px; accent-color:#6366f1; flex-shrink:0; }
+  .result-card label { display:flex; align-items:flex-start; gap:.5rem; cursor:pointer; }
+  .result-card .rc-thumb { width:100%; height:110px; object-fit:cover; border-radius:6px; background:#e2e8f0; }
+  .result-card .rc-thumb-placeholder { width:100%; height:110px; background:#e2e8f0; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:.75rem; }
+  .result-card .rc-title { font-size:.8rem; font-weight:600; color:#1e293b; line-height:1.3; }
+  .result-card .rc-url { font-size:.68rem; color:#94a3b8; word-break:break-all; }
+  .status-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.25rem .65rem; border-radius:999px; font-size:.75rem; font-weight:600; }
+  .status-running { background:#dbeafe; color:#1e40af; }
+  .status-done { background:#d1fae5; color:#065f46; }
+  .status-error { background:#fee2e2; color:#991b1b; }
+  #log { font-family:monospace; font-size:.78rem; background:#0f172a; color:#94a3b8; border-radius:8px; padding:1rem; min-height:60px; white-space:pre-wrap; }
+  .select-bar { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .count-badge { background:#ede9fe; color:#6366f1; border-radius:6px; padding:.2rem .6rem; font-size:.78rem; font-weight:600; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="search" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Scraper — redecanais.ph</h1>
+</div>
+
+<div class="scraper-card">
+  <h3><i data-feather="settings" style="width:16px;height:16px;"></i> Configurar busca</h3>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+    <div class="form-group" style="margin:0;min-width:180px;">
+      <label>Categoria</label>
+      <select id="sel-category">
+        {% for cat in categories %}
+          <option value="{{ cat.value }}">{{ cat.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0;min-width:120px;">
+      <label>Máx. páginas</label>
+      <input type="number" id="sel-pages" value="3" min="1" max="20" style="width:100px;">
+    </div>
+    <button class="btn btn-primary" id="btn-scrape" onclick="startScrape()">
+      <i data-feather="play"></i> Iniciar Scraping
+    </button>
+    <span id="status-badge" style="display:none;"></span>
+  </div>
+  <div class="progress-wrap" id="progress-wrap" style="display:none;">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+  <div id="log" style="display:none;"></div>
+</div>
+
+<div id="results-section" style="display:none;">
+  <div class="scraper-card">
+    <h3>
+      <i data-feather="list" style="width:16px;height:16px;"></i>
+      Resultados
+      <span class="count-badge" id="count-badge">0</span>
+    </h3>
+    <div class="select-bar">
+      <button class="btn btn-secondary btn-sm" onclick="selectAll(true)"><i data-feather="check-square"></i> Selecionar tudo</button>
+      <button class="btn btn-secondary btn-sm" onclick="selectAll(false)"><i data-feather="square"></i> Desmarcar tudo</button>
+      <span class="muted" style="font-size:.8rem;">Selecione os itens que deseja importar.</span>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+  </div>
+
+  <div class="scraper-card">
+    <h3><i data-feather="download" style="width:16px;height:16px;"></i> Importar selecionados</h3>
+    <form id="import-form" method="post" action="{{ url_for('admin.scraper_import') }}">
+      <input type="hidden" name="results_json" id="import-json">
+      <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+        <div class="form-check">
+          <input type="checkbox" name="overwrite" id="overwrite">
+          <label for="overwrite" style="margin:0;">Atualizar títulos já existentes</label>
+        </div>
+        <button class="btn btn-primary" type="button" onclick="submitImport()">
+          <i data-feather="save"></i> Importar <span id="import-count">0</span> itens
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let jobId = null;
+let pollTimer = null;
+let allResults = [];
+
+function startScrape() {
+  const category = document.getElementById('sel-category').value;
+  const maxPages = document.getElementById('sel-pages').value;
+  document.getElementById('btn-scrape').disabled = true;
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('log').style.display = 'block';
+  setStatus('running', 'Iniciando...');
+  animateProgress();
+
+  fetch('{{ url_for("admin.scraper_run") }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `category=${encodeURIComponent(category)}&max_pages=${encodeURIComponent(maxPages)}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    jobId = data.job_id;
+    log(`Job iniciado: ${jobId}\nCategoria: ${category} | Páginas: ${maxPages}`);
+    pollStatus();
+  })
+  .catch(e => {
+    setStatus('error', 'Erro ao iniciar');
+    log('Erro: ' + e);
+    document.getElementById('btn-scrape').disabled = false;
+  });
+}
+
+function pollStatus() {
+  if (!jobId) return;
+  fetch(`/admin/scraper/status/${jobId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'running') {
+        log(`Aguardando... (job em execução)`);
+        pollTimer = setTimeout(pollStatus, 3000);
+      } else if (data.status === 'done') {
+        allResults = data.results;
+        setStatus('done', `Concluído — ${allResults.length} itens encontrados`);
+        log(`Scraping finalizado!\n${allResults.length} itens coletados.`);
+        stopProgress();
+        renderResults(allResults);
+        document.getElementById('btn-scrape').disabled = false;
+      } else if (data.status === 'error') {
+        setStatus('error', 'Erro no scraping');
+        log('ERRO: ' + data.error);
+        stopProgress();
+        document.getElementById('btn-scrape').disabled = false;
+      }
+    })
+    .catch(e => {
+      log('Erro ao verificar status: ' + e);
+      pollTimer = setTimeout(pollStatus, 5000);
+    });
+}
+
+function renderResults(items) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  document.getElementById('count-badge').textContent = items.length;
+  document.getElementById('results-section').style.display = 'block';
+
+  items.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    const thumb = item.thumb_url
+      ? `<img class="rc-thumb" src="${item.thumb_url}" onerror="this.style.display='none';this.nextSibling.style.display='flex';" loading="lazy">
+         <div class="rc-thumb-placeholder" style="display:none;">Sem imagem</div>`
+      : `<div class="rc-thumb-placeholder">Sem imagem</div>`;
+    card.innerHTML = `
+      ${thumb}
+      <label>
+        <input type="checkbox" class="result-cb" data-idx="${i}" checked onchange="updateCount()">
+        <span class="rc-title">${escHtml(item.title)}</span>
+      </label>
+      <span class="rc-url">${escHtml(item.embed_url)}</span>
+    `;
+    grid.appendChild(card);
+  });
+  updateCount();
+}
+
+function selectAll(checked) {
+  document.querySelectorAll('.result-cb').forEach(cb => cb.checked = checked);
+  updateCount();
+}
+
+function updateCount() {
+  const n = document.querySelectorAll('.result-cb:checked').length;
+  document.getElementById('import-count').textContent = n;
+}
+
+function submitImport() {
+  const checked = [...document.querySelectorAll('.result-cb:checked')];
+  if (!checked.length) { alert('Nenhum item selecionado.'); return; }
+  const selected = checked.map(cb => allResults[parseInt(cb.dataset.idx)]);
+  document.getElementById('import-json').value = JSON.stringify(selected);
+  document.getElementById('import-form').submit();
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('status-badge');
+  el.style.display = 'inline-flex';
+  el.className = `status-badge status-${type}`;
+  el.textContent = msg;
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+let progDir = 1, progVal = 10;
+let progTimer = null;
+function animateProgress() {
+  const bar = document.getElementById('progress-bar');
+  progTimer = setInterval(() => {
+    progVal += progDir * 2;
+    if (progVal >= 90) progDir = -1;
+    if (progVal <= 10) progDir = 1;
+    bar.style.width = progVal + '%';
+  }, 120);
+}
+function stopProgress() {
+  clearInterval(progTimer);
+  document.getElementById('progress-bar').style.width = '100%';
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

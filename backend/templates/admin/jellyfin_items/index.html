@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% set active_menu = 'jellyfin_items' %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="film" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Catálogo</h1>
+  <a class="btn btn-secondary" href="{{ url_for('admin.jellyfin_servers_index') }}"><i data-feather="cloud"></i> Gerenciar servidores</a>
+</div>
+<div class="card">
+  <div class="card-body" style="padding:.75rem 1.25rem;">
+    <form method="get" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+      <div class="form-group" style="margin:0;min-width:180px;">
+        <label style="margin-bottom:.25rem;">Servidor</label>
+        <select name="server_id">
+          <option value="">Todos os servidores</option>
+          {% for server in servers %}<option value="{{ server.id }}" {% if request.args.get('server_id') == server.id|string %}selected{% endif %}>{{ server.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;min-width:140px;">
+        <label style="margin-bottom:.25rem;">Status</label>
+        <select name="active">
+          <option value="">Todos</option>
+          <option value="yes" {% if request.args.get('active') == 'yes' %}selected{% endif %}>Ativos</option>
+          <option value="no" {% if request.args.get('active') == 'no' %}selected{% endif %}>Inativos</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" type="submit"><i data-feather="filter"></i> Filtrar</button>
+    </form>
+  </div>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Título</th><th>Servidor</th><th>Tipo</th><th>Link play</th><th>Status</th><th>Ação</th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td><strong>{{ item.name }}</strong></td>
+      <td><span class="muted">{{ item.jellyfin_server.name }}</span></td>
+      <td>{% if item.media_type %}<span class="badge badge-info">{{ item.media_type }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td>
+        {% if item.video %}
+          <a href="{{ config.CLIENT_PUBLIC_URL }}/play/{{ item.video.id }}" target="_blank" style="color:#6366f1;font-size:.8rem;">
+            <i data-feather="play" style="width:12px;height:12px;"></i> /play/{{ item.video.id }}
+          </a>
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td>
+        {% if item.is_active %}<span class="badge badge-success"><i data-feather="check" style="width:10px;height:10px;"></i> ativo</span>
+        {% else %}<span class="badge badge-muted">inativo</span>{% endif %}
+      </td>
+      <td>
+        <form method="post" action="{{ url_for('admin.jellyfin_items_toggle', id=item.id) }}" style="display:inline">
+          {% if item.is_active %}
+            <button class="btn btn-danger btn-sm" type="submit"><i data-feather="eye-off"></i> Desativar</button>
+          {% else %}
+            <button class="btn btn-success btn-sm" type="submit"><i data-feather="eye"></i> Ativar</button>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not items %}
+    <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum item encontrado. Faça um Sync Items no servidor Jellyfin.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

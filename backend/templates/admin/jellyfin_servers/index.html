@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% set active_menu = 'jellyfin_servers' %}
+{% block content %}
+<div class="page-header">
+  <h1><i data-feather="cloud" style="width:22px;height:22px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Servidores Jellyfin</h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{{ url_for('admin.jellyfin_items_index') }}"><i data-feather="film"></i> Ver catálogo</a>
+    <a class="btn btn-primary" href="{{ url_for('admin.jellyfin_servers_create') }}"><i data-feather="plus"></i> Novo servidor</a>
+  </div>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Nome</th><th>URL</th><th>Prioridade</th><th>Status</th><th>Health</th><th>Último check</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for server in servers %}
+    <tr>
+      <td><strong>{{ server.name }}</strong></td>
+      <td><span class="muted">{{ server.base_url }}</span>{% if server.internal_url %}<br><span class="muted" style="font-size:.75rem;">int: {{ server.internal_url }}</span>{% endif %}</td>
+      <td>{{ server.priority }}</td>
+      <td>{% if server.is_active %}<span class="badge badge-success"><i data-feather="check" style="width:10px;height:10px;"></i> ativo</span>{% else %}<span class="badge badge-danger">inativo</span>{% endif %}</td>
+      <td>
+        {% if server.health_status == 'healthy' %}<span class="badge badge-success">healthy</span>
+        {% elif server.health_status %}<span class="badge badge-danger">{{ server.health_status }}</span>
+        {% else %}<span class="badge badge-muted">—</span>{% endif %}
+      </td>
+      <td><span class="muted">{{ server.last_health_check.strftime('%d/%m %H:%M') if server.last_health_check else '—' }}</span></td>
+      <td class="actions">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.jellyfin_servers_edit', id=server.id) }}"><i data-feather="edit-2"></i></a>
+        <form method="post" action="{{ url_for('admin.jellyfin_servers_health', id=server.id) }}" style="display:inline">
+          <button class="btn btn-secondary btn-sm" type="submit" title="Health check"><i data-feather="activity"></i></button>
+        </form>
+        <form method="post" action="{{ url_for('admin.jellyfin_servers_sync_libraries', id=server.id) }}" style="display:inline">
+          <button class="btn btn-secondary btn-sm" type="submit" title="Sync bibliotecas"><i data-feather="book"></i></button>
+        </form>
+        <form method="post" action="{{ url_for('admin.jellyfin_servers_sync_items', id=server.id) }}" style="display:inline">
+          <button class="btn btn-primary btn-sm" type="submit" title="Sync itens"><i data-feather="refresh-cw"></i> Sync</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not servers %}
+    <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum servidor Jellyfin cadastrado.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

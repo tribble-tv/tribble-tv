@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% set active_menu = 'videos' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Vídeos</a> / {{ 'Editar' if video else 'Novo' }} Torrent</div>
+    <h1>{{ 'Editar' if video else 'Novo' }} vídeo torrent</h1>
+  </div>
+</div>
+<div class="card" style="max-width:640px;">
+  <div class="card-header">
+    <h5><i data-feather="download-cloud" style="width:15px;height:15px;vertical-align:middle;margin-right:6px;"></i>
+      Streaming via BitTorrent (WebTorrent)
+    </h5>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      <div class="form-group">
+        <label>Título do vídeo</label>
+        <input name="title" value="{{ video.title if video else '' }}" placeholder="Ex: Big Buck Bunny (2008)" required>
+      </div>
+      <div class="form-group">
+        <label>Magnet link ou URL do .torrent</label>
+        <input name="magnet" value="{{ video.source_url if video else '' }}"
+               placeholder="magnet:?xt=urn:btih:..." required
+               style="font-family:monospace;font-size:.82rem;">
+        <p class="muted" style="margin-top:.35rem;">
+          Cole um <strong>magnet link</strong> (<code>magnet:?xt=urn:btih:...</code>) ou a URL direta de um arquivo <code>.torrent</code>.<br>
+          O streaming começa enquanto o arquivo ainda é baixado (download progressivo).
+        </p>
+      </div>
+      <div class="form-group">
+        <label>Categoria (opcional)</label>
+        <select name="category">
+          <option value="">— Sem categoria —</option>
+          {% set categories = ['Terror','Ação','Comédia','Drama','Romance','Suspense','Faroeste','Ficção Científica','Documentário','Infantil','Aventura','Animação','Filmes','Séries'] %}
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if video and video.category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>URL da thumbnail (opcional)</label>
+        <input name="thumbnail_url" value="{{ video.thumbnail_url if video else '' }}" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Sinopse (opcional)</label>
+        <textarea name="synopsis" rows="3" placeholder="Descrição do conteúdo...">{{ video.synopsis if video else '' }}</textarea>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <p style="font-size:.8rem;font-weight:600;color:#166534;margin-bottom:.5rem;">
+          <i data-feather="info" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;"></i>
+          Como funciona o streaming torrent:
+        </p>
+        <ol style="font-size:.8rem;color:#15803d;padding-left:1.2rem;line-height:1.8;">
+          <li>O <strong>torrent-node</strong> (WebTorrent) recebe o magnet e começa a baixar os peers</li>
+          <li>O arquivo de vídeo maior é selecionado automaticamente</li>
+          <li>O Flask faz proxy com suporte a <strong>Range requests</strong> (seek funciona)</li>
+          <li>O player HTML5 nativo reproduz diretamente no navegador</li>
+          <li>O download fica em cache enquanto o serviço estiver rodando</li>
+        </ol>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><i data-feather="save"></i> Salvar</button>
+        <a class="btn btn-secondary" href="{{ url_for('admin.videos_index') }}">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

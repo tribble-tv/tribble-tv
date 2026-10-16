@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% set active_menu = 'videos' %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="breadcrumb"><a href="{{ url_for('admin.videos_index') }}">Vídeos</a> / {{ video.title }}</div>
+    <h1><i data-feather="map-pin" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;color:#6366f1;"></i>Localizações</h1>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('admin.video_locations_create', id=video.id) }}"><i data-feather="plus"></i> Nova localização</a>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Servidor</th><th>Storage path</th><th>Tipo</th><th>Primária</th><th>Ativa</th><th>Ações</th></tr></thead>
+  <tbody>
+  {% for location in locations %}
+    <tr>
+      <td><strong>{{ location.media_server.name }}</strong></td>
+      <td><code style="font-size:.8rem;background:#f1f5f9;padding:.15rem .4rem;border-radius:4px;">{{ location.storage_path }}</code></td>
+      <td><span class="badge badge-info">{{ location.source_type }}</span></td>
+      <td>{% if location.is_primary %}<span class="badge badge-success">sim</span>{% else %}<span class="badge badge-muted">não</span>{% endif %}</td>
+      <td>{% if location.is_active %}<span class="badge badge-success">ativa</span>{% else %}<span class="badge badge-danger">inativa</span>{% endif %}</td>
+      <td class="actions">
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.video_locations_edit', id=location.id) }}"><i data-feather="edit-2"></i></a>
+        <form method="post" action="{{ url_for('admin.video_locations_delete', id=location.id) }}" style="display:inline" onsubmit="return confirm('Excluir localização?')">
+          <button class="btn btn-danger btn-sm" type="submit"><i data-feather="trash-2"></i></button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  {% if not locations %}
+    <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma localização cadastrada.</td></tr>
+  {% endif %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
